@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_color_scheme.dart';
 import '../../domain/station_view_state.dart';
 import '../../state/radio_controller.dart';
 import 'station_card.dart';
@@ -14,6 +14,7 @@ class StationViewport extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     switch (controller.viewState) {
       case StationViewState.loading:
         return const LoadingStationList();
@@ -31,8 +32,8 @@ class StationViewport extends StatelessWidget {
           action: FilledButton(
             onPressed: () => unawaited(controller.retry()),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.textPrimary,
-              foregroundColor: AppColors.background,
+              backgroundColor: c.textPrimary,
+              foregroundColor: c.background,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(999),
               ),
@@ -102,6 +103,7 @@ class _SkeletonCardState extends State<SkeletonCard>
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
@@ -119,7 +121,7 @@ class _SkeletonCardState extends State<SkeletonCard>
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.textPrimary.withValues(alpha: shimmerOpacity),
+                  color: c.textPrimary.withValues(alpha: shimmerOpacity),
                   borderRadius: BorderRadius.circular(6),
                 ),
               ),
@@ -133,7 +135,7 @@ class _SkeletonCardState extends State<SkeletonCard>
                       height: 14,
                       width: 160,
                       decoration: BoxDecoration(
-                        color: AppColors.textPrimary.withValues(alpha: shimmerOpacity),
+                        color: c.textPrimary.withValues(alpha: shimmerOpacity),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -143,7 +145,7 @@ class _SkeletonCardState extends State<SkeletonCard>
                       height: 11,
                       width: 100,
                       decoration: BoxDecoration(
-                        color: AppColors.textPrimary.withValues(alpha: shimmerOpacity * 0.7),
+                        color: c.textPrimary.withValues(alpha: shimmerOpacity * 0.7),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -174,29 +176,31 @@ class StateMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(40, 60, 40, 120),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(icon, size: 56, color: AppColors.textTertiary),
+            Icon(icon, size: 56, color: c.textTertiary),
             const SizedBox(height: 20),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 letterSpacing: -0.3,
+                color: c.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textTertiary,
+              style: TextStyle(
+                color: c.textTertiary,
                 fontSize: 14,
                 height: 1.5,
               ),

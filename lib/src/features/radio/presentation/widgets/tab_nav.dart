@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_color_scheme.dart';
 import '../../domain/radio_tab.dart';
 import '../../state/radio_controller.dart';
 import 'glass.dart';
@@ -60,19 +60,20 @@ class FavoriteCountBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return Container(
       constraints: const BoxConstraints(minWidth: 18),
       height: 18,
       padding: const EdgeInsets.symmetric(horizontal: 5),
       decoration: BoxDecoration(
-        color: AppColors.accent,
+        color: c.accent,
         borderRadius: BorderRadius.circular(9),
       ),
       child: Center(
         child: Text(
           '$count',
-          style: const TextStyle(
-            color: AppColors.background,
+          style: TextStyle(
+            color: c.background,
             fontSize: 11,
             fontWeight: FontWeight.w700,
           ),

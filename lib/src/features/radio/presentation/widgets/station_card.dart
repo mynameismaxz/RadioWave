@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_color_scheme.dart';
 import '../../../../data/models/station.dart';
 import '../../state/radio_controller.dart';
 
@@ -18,6 +18,7 @@ class StationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     final isPlaying =
         controller.playerIsPlaying && controller.currentStation?.uuid == station.uuid;
     final isCurrent = controller.currentStation?.uuid == station.uuid;
@@ -28,12 +29,12 @@ class StationCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: () => unawaited(controller.playStation(station)),
-        hoverColor: AppColors.cardHover,
-        splashColor: AppColors.accent.withValues(alpha: 0.06),
+        hoverColor: c.cardHover,
+        splashColor: c.accent.withValues(alpha: 0.06),
         child: Ink(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: isCurrent ? AppColors.surfaceHighlight : Colors.transparent,
+            color: isCurrent ? c.surfaceHighlight : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -55,8 +56,8 @@ class StationCard extends StatelessWidget {
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                         color: isCurrent
-                            ? AppColors.accent
-                            : AppColors.textPrimary,
+                            ? c.accent
+                            : c.textPrimary,
                         letterSpacing: -0.2,
                       ),
                     ),
@@ -80,7 +81,7 @@ class StationCard extends StatelessWidget {
                 icon: Icon(
                   isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                   size: 20,
-                  color: isFavorite ? AppColors.accent : AppColors.textTertiary,
+                  color: isFavorite ? c.accent : c.textTertiary,
                 ),
               ),
             ],
@@ -103,28 +104,29 @@ class StationArtwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(6),
       child: Container(
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: AppColors.surfaceHighlight,
+          color: c.surfaceHighlight,
           borderRadius: BorderRadius.circular(6),
         ),
         child: url.isEmpty
-            ? const Icon(
+            ? Icon(
                 Icons.radio_rounded,
-                color: AppColors.textTertiary,
+                color: c.textTertiary,
                 size: 22,
               )
             : Image.network(
                 url,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) {
-                  return const Icon(
+                  return Icon(
                     Icons.radio_rounded,
-                    color: AppColors.textTertiary,
+                    color: c.textTertiary,
                     size: 22,
                   );
                 },
@@ -141,6 +143,7 @@ class StationMeta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     final parts = <String>[];
 
     if (station.country.isNotEmpty) {
@@ -160,8 +163,8 @@ class StationMeta extends StatelessWidget {
       parts.join(' · '),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: const TextStyle(
-        color: AppColors.textTertiary,
+      style: TextStyle(
+        color: c.textTertiary,
         fontSize: 13,
         fontWeight: FontWeight.w400,
       ),
@@ -199,6 +202,7 @@ class _PlayingBarsState extends State<PlayingBars>
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
@@ -214,7 +218,7 @@ class _PlayingBarsState extends State<PlayingBars>
               height: height,
               margin: const EdgeInsets.symmetric(horizontal: 1),
               decoration: BoxDecoration(
-                color: AppColors.accent,
+                color: c.accent,
                 borderRadius: BorderRadius.circular(2),
               ),
             );

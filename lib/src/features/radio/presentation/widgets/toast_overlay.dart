@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_color_scheme.dart';
 import '../../../../data/models/app_toast.dart';
 
 class ToastOverlay extends StatelessWidget {
@@ -30,10 +30,11 @@ class ToastCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     final color = switch (toast.type) {
-      ToastType.error => AppColors.red,
-      ToastType.success => AppColors.accent,
-      ToastType.info => AppColors.textSecondary,
+      ToastType.error => c.red,
+      ToastType.success => c.accent,
+      ToastType.info => c.textSecondary,
     };
     final icon = switch (toast.type) {
       ToastType.error => Icons.error_outline_rounded,
@@ -47,7 +48,7 @@ class ToastCard extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 420),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: AppColors.surfaceElevated,
+          color: c.surfaceElevated,
           borderRadius: BorderRadius.circular(8),
           boxShadow: <BoxShadow>[
             BoxShadow(
@@ -64,9 +65,10 @@ class ToastCard extends StatelessWidget {
             Flexible(
               child: Text(
                 toast.message,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
+                  color: c.textPrimary,
                 ),
               ),
             ),

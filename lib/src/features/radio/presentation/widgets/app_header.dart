@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../../app/theme/app_color_scheme.dart';
+import '../../../../app/theme/theme_notifier.dart';
 import '../../domain/radio_tab.dart';
 import '../../state/radio_controller.dart';
 import 'glass.dart';
@@ -38,6 +40,7 @@ class _AppHeaderState extends State<AppHeader> {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 420;
+    final c = AppColorScheme.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
@@ -49,22 +52,25 @@ class _AppHeaderState extends State<AppHeader> {
             child: TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
+                color: c.textPrimary,
               ),
-              cursorColor: Colors.white,
+              cursorColor: c.textPrimary,
               decoration: glassInputDecoration(
-                hintText: 'What do you want to listen to?',
+                context: context,
+                hintText: compact ? 'Search...' : 'What do you want to listen to?',
                 prefixIcon: compact ? Icons.radio_rounded : Icons.search_rounded,
                 suffixIcon: _searchController.text.isEmpty
                     ? null
                     : IconButton(
                         tooltip: 'Clear search',
                         onPressed: () => unawaited(_clearSearch()),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.close_rounded,
                           size: 18,
+                          color: c.textTertiary,
                         ),
                       ),
               ),
@@ -72,6 +78,8 @@ class _AppHeaderState extends State<AppHeader> {
               onSubmitted: (_) => unawaited(_runSearch()),
             ),
           ),
+          const SizedBox(width: 10),
+          _ThemeToggleButton(),
         ],
       ),
     );
@@ -105,5 +113,44 @@ class _AppHeaderState extends State<AppHeader> {
     } else {
       await widget.controller.loadDiscover();
     }
+  }
+}
+
+/// Animated dark / light mode toggle button.
+class _ThemeToggleButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
+    final isDark = themeNotifier.isDark;
+
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: Material(
+        color: c.surfaceHighlight,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: themeNotifier.toggle,
+          child: Center(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, anim) {
+                return RotationTransition(
+                  turns: Tween<double>(begin: 0.75, end: 1.0).animate(anim),
+                  child: FadeTransition(opacity: anim, child: child),
+                );
+              },
+              child: Icon(
+                isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                key: ValueKey(isDark),
+                size: 20,
+                color: isDark ? const Color(0xFFFFC107) : const Color(0xFF5C6BC0),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

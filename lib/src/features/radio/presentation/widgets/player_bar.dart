@@ -3,7 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_color_scheme.dart';
 import '../../state/radio_controller.dart';
 import 'now_playing_page.dart';
 
@@ -14,6 +14,7 @@ class PlayerBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     final station = controller.currentStation;
     final currentIsFavorite = station != null && controller.isFavorite(station.uuid);
 
@@ -35,12 +36,12 @@ class PlayerBar extends StatelessWidget {
                 constraints: const BoxConstraints(minHeight: 68),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: c.surface,
                   border: Border(
                     top: BorderSide(
                       color: controller.playerIsPlaying
-                          ? AppColors.accent.withValues(alpha: 0.3)
-                          : AppColors.border,
+                          ? c.accent.withValues(alpha: 0.3)
+                          : c.border,
                       width: 0.5,
                     ),
                   ),
@@ -91,8 +92,8 @@ class PlayerBar extends StatelessWidget {
                                 : Icons.favorite_border_rounded,
                             size: 20,
                             color: currentIsFavorite
-                                ? AppColors.accent
-                                : AppColors.textTertiary,
+                                ? c.accent
+                                : c.textTertiary,
                           ),
                         ),
 
@@ -131,16 +132,17 @@ class _PlayerArtwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: AppColors.surfaceHighlight,
+        color: c.surfaceHighlight,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Icon(
         isPlaying ? Icons.graphic_eq_rounded : Icons.album_rounded,
-        color: isPlaying ? AppColors.accent : AppColors.textTertiary,
+        color: isPlaying ? c.accent : c.textTertiary,
         size: 22,
       ),
     );
@@ -162,6 +164,7 @@ class _PlayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     // Always tappable when enabled — loading can be cancelled
     return Tooltip(
       message: isLoading ? 'Stop' : (isPlaying ? 'Pause' : 'Play'),
@@ -169,24 +172,24 @@ class _PlayButton extends StatelessWidget {
         width: 44,
         height: 44,
         child: Material(
-          color: enabled ? AppColors.textPrimary : AppColors.surfaceHighlight,
+          color: enabled ? c.textPrimary : c.surfaceHighlight,
           shape: const CircleBorder(),
           child: InkWell(
             customBorder: const CircleBorder(),
             onTap: onPressed,
             child: Center(
               child: isLoading
-                  ? const Icon(
+                  ? Icon(
                       Icons.stop_rounded,
                       size: 26,
-                      color: AppColors.background,
+                      color: c.background,
                     )
                   : Icon(
                       isPlaying
                           ? Icons.pause_rounded
                           : Icons.play_arrow_rounded,
                       size: 26,
-                      color: AppColors.background,
+                      color: c.background,
                     ),
             ),
           ),
@@ -210,6 +213,7 @@ class PlayerInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -218,10 +222,11 @@ class PlayerInfo extends StatelessWidget {
           stationName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
             letterSpacing: -0.1,
+            color: c.textPrimary,
           ),
         ),
         const SizedBox(height: 2),
@@ -230,7 +235,7 @@ class PlayerInfo extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: active ? AppColors.accent : AppColors.textTertiary,
+            color: active ? c.accent : c.textTertiary,
             fontSize: 12,
             fontWeight: FontWeight.w400,
           ),
@@ -252,6 +257,7 @@ class VolumeControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     if (compact) {
       return IconButton(
         tooltip: controller.isMuted ? 'Unmute' : 'Mute',
@@ -262,7 +268,7 @@ class VolumeControl extends StatelessWidget {
               ? Icons.volume_off_rounded
               : Icons.volume_up_rounded,
           size: 20,
-          color: AppColors.textTertiary,
+          color: c.textTertiary,
         ),
       );
     }
@@ -282,7 +288,7 @@ class VolumeControl extends StatelessWidget {
                     ? Icons.volume_down_rounded
                     : Icons.volume_up_rounded,
             size: 20,
-            color: AppColors.textSecondary,
+            color: c.textSecondary,
           ),
         ),
         SizedBox(
@@ -328,6 +334,7 @@ class _VisualizerBarsState extends State<VisualizerBars>
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
@@ -342,7 +349,7 @@ class _VisualizerBarsState extends State<VisualizerBars>
               height: height,
               margin: const EdgeInsets.symmetric(horizontal: 2),
               decoration: BoxDecoration(
-                color: AppColors.accent,
+                color: c.accent,
                 borderRadius: BorderRadius.circular(4),
               ),
             );

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_color_scheme.dart';
 import '../../../../data/models/station.dart';
 import '../../state/radio_controller.dart';
 
@@ -50,18 +50,20 @@ class NowPlayingPage extends StatelessWidget {
         final isFavorite =
             station != null && controller.isFavorite(station.uuid);
 
+        final c = AppColorScheme.of(context);
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                stops: <double>[0.0, 0.45, 1.0],
+                stops: const <double>[0.0, 0.45, 1.0],
                 colors: <Color>[
-                  Color(0xFF1A2A1E),
-                  Color(0xFF0D0D0D),
-                  AppColors.background,
+                  isDark ? const Color(0xFF1A2A1E) : const Color(0xFFD5E8DB),
+                  isDark ? const Color(0xFF0D0D0D) : const Color(0xFFEEEEF0),
+                  c.background,
                 ],
               ),
             ),
@@ -115,6 +117,7 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
@@ -122,18 +125,18 @@ class _TopBar extends StatelessWidget {
           IconButton(
             tooltip: 'Close',
             onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(
+            icon: Icon(
               Icons.keyboard_arrow_down_rounded,
               size: 30,
-              color: AppColors.textPrimary,
+              color: c.textPrimary,
             ),
           ),
-          const Expanded(
+          Expanded(
             child: Text(
               'NOW PLAYING',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: AppColors.textSecondary,
+                color: c.textSecondary,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.5,
@@ -143,9 +146,9 @@ class _TopBar extends StatelessWidget {
           IconButton(
             tooltip: 'Options',
             onPressed: () => _showOptionsSheet(context),
-            icon: const Icon(
+            icon: Icon(
               Icons.more_vert_rounded,
-              color: AppColors.textSecondary,
+              color: c.textSecondary,
             ),
           ),
         ],
@@ -154,13 +157,15 @@ class _TopBar extends StatelessWidget {
   }
 
   void _showOptionsSheet(BuildContext context) {
+    final c = AppColorScheme.of(context);
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.surfaceElevated,
+      backgroundColor: c.surfaceElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (context) {
+      builder: (sheetCtx) {
+        final sc = AppColorScheme.of(sheetCtx);
         final station = controller.currentStation;
         return SafeArea(
           child: Padding(
@@ -173,28 +178,28 @@ class _TopBar extends StatelessWidget {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: AppColors.textTertiary,
+                    color: sc.textTertiary,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 if (station != null) ...<Widget>[
                   ListTile(
-                    leading: const Icon(Icons.info_outline_rounded, color: AppColors.textSecondary),
+                    leading: Icon(Icons.info_outline_rounded, color: sc.textSecondary),
                     title: const Text('Station Info'),
                     subtitle: Text(
                       '${station.codec.isNotEmpty ? station.codec : "Unknown"} · ${station.bitrate > 0 ? "${station.bitrate} kbps" : "Unknown bitrate"}',
-                      style: const TextStyle(color: AppColors.textTertiary, fontSize: 12),
+                      style: TextStyle(color: sc.textTertiary, fontSize: 12),
                     ),
                   ),
                   if (station.homepage.isNotEmpty)
                     ListTile(
-                      leading: const Icon(Icons.language_rounded, color: AppColors.textSecondary),
+                      leading: Icon(Icons.language_rounded, color: sc.textSecondary),
                       title: const Text('Visit Website'),
                       subtitle: Text(
                         station.homepage,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: AppColors.textTertiary, fontSize: 12),
+                        style: TextStyle(color: sc.textTertiary, fontSize: 12),
                       ),
                     ),
                 ],
@@ -218,6 +223,7 @@ class _ArtworkSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
       child: Center(
@@ -225,11 +231,11 @@ class _ArtworkSection extends StatelessWidget {
           aspectRatio: 1,
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.surfaceHighlight,
+              color: c.surfaceHighlight,
               borderRadius: BorderRadius.circular(12),
               boxShadow: <BoxShadow>[
                 BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.15),
+                  color: c.accent.withValues(alpha: 0.15),
                   blurRadius: 60,
                   spreadRadius: 10,
                 ),
@@ -267,23 +273,24 @@ class _FallbackArtwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: <Color>[
-            AppColors.accent.withValues(alpha: 0.3),
-            AppColors.surfaceHighlight,
+            c.accent.withValues(alpha: 0.3),
+            c.surfaceHighlight,
             const Color(0xFF1A1A2E),
           ],
         ),
       ),
-      child: const Center(
+      child: Center(
         child: Icon(
           Icons.radio_rounded,
           size: 80,
-          color: AppColors.textTertiary,
+          color: c.textTertiary,
         ),
       ),
     );
@@ -307,6 +314,7 @@ class _StationInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Row(
@@ -319,11 +327,11 @@ class _StationInfo extends StatelessWidget {
                   station?.name ?? 'No Station',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.5,
-                    color: AppColors.textPrimary,
+                    color: c.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -331,9 +339,9 @@ class _StationInfo extends StatelessWidget {
                   _buildSubtitle(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.textSecondary,
+                    color: c.textSecondary,
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -352,7 +360,7 @@ class _StationInfo extends StatelessWidget {
                 isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                 key: ValueKey(isFavorite),
                 size: 28,
-                color: isFavorite ? AppColors.accent : AppColors.textTertiary,
+                color: isFavorite ? c.accent : c.textTertiary,
               ),
             ),
           ),
@@ -403,6 +411,7 @@ class _LiveIndicatorState extends State<_LiveIndicator>
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(32, 20, 32, 4),
       child: Column(
@@ -418,7 +427,7 @@ class _LiveIndicatorState extends State<_LiveIndicator>
                     size: const Size(double.infinity, 3),
                     painter: _LiveBarPainter(
                       progress: _controller.value,
-                      color: AppColors.accent,
+                      color: c.accent,
                     ),
                   ),
                 ),
@@ -432,18 +441,18 @@ class _LiveIndicatorState extends State<_LiveIndicator>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.15),
+                  color: c.accent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Icon(Icons.circle, size: 6, color: AppColors.accent),
-                    SizedBox(width: 5),
+                    Icon(Icons.circle, size: 6, color: c.accent),
+                    const SizedBox(width: 5),
                     Text(
                       'LIVE',
                       style: TextStyle(
-                        color: AppColors.accent,
+                        color: c.accent,
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1,
@@ -452,10 +461,10 @@ class _LiveIndicatorState extends State<_LiveIndicator>
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.cast_rounded,
                 size: 18,
-                color: AppColors.textTertiary,
+                color: c.textTertiary,
               ),
             ],
           ),
@@ -520,6 +529,7 @@ class _PlaybackControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     final hasStation = controller.currentStation != null;
 
     return Padding(
@@ -528,10 +538,10 @@ class _PlaybackControls extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           // Shuffle (decorative for radio)
-          const Icon(
+          Icon(
             Icons.shuffle_rounded,
             size: 22,
-            color: AppColors.textTertiary,
+            color: c.textTertiary,
           ),
 
           const SizedBox(width: 24),
@@ -543,9 +553,9 @@ class _PlaybackControls extends StatelessWidget {
                 ? () => unawaited(controller.playPreviousStation())
                 : null,
             iconSize: 36,
-            icon: const Icon(
+            icon: Icon(
               Icons.skip_previous_rounded,
-              color: AppColors.textPrimary,
+              color: c.textPrimary,
             ),
           ),
 
@@ -563,19 +573,19 @@ class _PlaybackControls extends StatelessWidget {
                 ? () => unawaited(controller.playNextStation())
                 : null,
             iconSize: 36,
-            icon: const Icon(
+            icon: Icon(
               Icons.skip_next_rounded,
-              color: AppColors.textPrimary,
+              color: c.textPrimary,
             ),
           ),
 
           const SizedBox(width: 24),
 
           // Repeat (decorative for radio)
-          const Icon(
+          Icon(
             Icons.repeat_rounded,
             size: 22,
-            color: AppColors.textTertiary,
+            color: c.textTertiary,
           ),
         ],
       ),
@@ -590,11 +600,12 @@ class _LargePlayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return SizedBox(
       width: 64,
       height: 64,
       child: Material(
-        color: AppColors.textPrimary,
+        color: c.textPrimary,
         shape: const CircleBorder(),
         elevation: 8,
         shadowColor: Colors.black.withValues(alpha: 0.4),
@@ -611,7 +622,7 @@ class _LargePlayButton extends StatelessWidget {
                       ? Icons.pause_rounded
                       : Icons.play_arrow_rounded,
               size: 34,
-              color: AppColors.background,
+              color: c.background,
             ),
           ),
         ),
@@ -631,6 +642,7 @@ class _BottomActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -649,7 +661,7 @@ class _BottomActions extends StatelessWidget {
                           ? Icons.volume_down_rounded
                           : Icons.volume_up_rounded,
                   size: 20,
-                  color: AppColors.textSecondary,
+                  color: c.textSecondary,
                 ),
               ),
               Expanded(
@@ -676,8 +688,8 @@ class _BottomActions extends StatelessWidget {
                   Icons.bedtime_outlined,
                   size: 18,
                   color: controller.hasSleepTimer
-                      ? AppColors.accent
-                      : AppColors.textTertiary,
+                      ? c.accent
+                      : c.textTertiary,
                 ),
                 label: Text(
                   controller.hasSleepTimer
@@ -685,8 +697,8 @@ class _BottomActions extends StatelessWidget {
                       : 'Sleep Timer',
                   style: TextStyle(
                     color: controller.hasSleepTimer
-                        ? AppColors.accent
-                        : AppColors.textTertiary,
+                        ? c.accent
+                        : c.textTertiary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -697,10 +709,10 @@ class _BottomActions extends StatelessWidget {
               IconButton(
                 tooltip: 'Queue',
                 onPressed: () {},
-                icon: const Icon(
+                icon: Icon(
                   Icons.queue_music_rounded,
                   size: 20,
-                  color: AppColors.textTertiary,
+                  color: c.textTertiary,
                 ),
               ),
             ],
@@ -717,9 +729,10 @@ class _BottomActions extends StatelessWidget {
   }
 
   void _showSleepTimerSheet(BuildContext context) {
+    final c = AppColorScheme.of(context);
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.surfaceElevated,
+      backgroundColor: c.surfaceElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -743,6 +756,7 @@ class _SleepTimerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -755,22 +769,22 @@ class _SleepTimerSheet extends StatelessWidget {
               height: 4,
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: AppColors.textTertiary,
+                color: c.textTertiary,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
 
             // Title
-            const Row(
+            Row(
               children: <Widget>[
-                Icon(Icons.bedtime_outlined, size: 20, color: AppColors.accent),
-                SizedBox(width: 10),
+                Icon(Icons.bedtime_outlined, size: 20, color: c.accent),
+                const SizedBox(width: 10),
                 Text(
                   'Sleep Timer',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: c.textPrimary,
                   ),
                 ),
               ],
@@ -807,8 +821,8 @@ class _SleepTimerSheet extends StatelessWidget {
                     Navigator.of(context).pop();
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.red,
-                    side: BorderSide(color: AppColors.red.withValues(alpha: 0.4)),
+                    foregroundColor: c.red,
+                    side: BorderSide(color: c.red.withValues(alpha: 0.4)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(999),
                     ),
@@ -849,8 +863,9 @@ class _TimerChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return Material(
-      color: isActive ? AppColors.accent : AppColors.surfaceHighlight,
+      color: isActive ? c.accent : c.surfaceHighlight,
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
@@ -860,7 +875,7 @@ class _TimerChip extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              color: isActive ? AppColors.background : AppColors.textSecondary,
+              color: isActive ? c.background : c.textSecondary,
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),

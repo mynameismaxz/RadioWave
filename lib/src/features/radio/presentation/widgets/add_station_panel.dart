@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_color_scheme.dart';
 import '../../../../data/models/app_toast.dart';
 import '../../state/radio_controller.dart';
 import 'glass.dart';
@@ -29,6 +29,7 @@ class _AddStationPanelState extends State<AddStationPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColorScheme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
       child: LayoutBuilder(
@@ -36,16 +37,17 @@ class _AddStationPanelState extends State<AddStationPanel> {
           final isCompact = constraints.maxWidth < 560;
           final nameField = TextField(
             controller: _nameController,
-            style: const TextStyle(fontSize: 14),
-            cursorColor: Colors.white,
-            decoration: glassInputDecoration(hintText: 'Station name'),
+            style: TextStyle(fontSize: 14, color: c.textPrimary),
+            cursorColor: c.textPrimary,
+            decoration: glassInputDecoration(context: context, hintText: 'Station name'),
           );
           final urlField = TextField(
             controller: _urlController,
             keyboardType: TextInputType.url,
-            style: const TextStyle(fontSize: 14),
-            cursorColor: Colors.white,
+            style: TextStyle(fontSize: 14, color: c.textPrimary),
+            cursorColor: c.textPrimary,
             decoration: glassInputDecoration(
+              context: context,
               hintText: 'Stream URL (e.g. https://...)',
             ),
           );
@@ -53,8 +55,8 @@ class _AddStationPanelState extends State<AddStationPanel> {
             onPressed: () => unawaited(_addStation()),
             style: FilledButton.styleFrom(
               minimumSize: Size(isCompact ? 0 : 124, 46),
-              backgroundColor: AppColors.accent,
-              foregroundColor: AppColors.background,
+              backgroundColor: c.accent,
+              foregroundColor: c.background,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(999),
               ),
@@ -90,10 +92,10 @@ class _AddStationPanelState extends State<AddStationPanel> {
                   ],
                 ),
               const SizedBox(height: 10),
-              const Text(
+              Text(
                 'Paste a direct MP3, AAC, or OGG stream URL.',
                 style: TextStyle(
-                  color: AppColors.textTertiary,
+                  color: c.textTertiary,
                   fontSize: 12,
                 ),
               ),

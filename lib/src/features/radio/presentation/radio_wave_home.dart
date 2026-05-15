@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_color_scheme.dart';
 import '../domain/radio_tab.dart';
 import '../state/radio_controller.dart';
 import 'widgets/add_station_panel.dart';
@@ -84,23 +84,25 @@ class _RadioWaveHomeState extends State<RadioWaveHome> {
   }
 }
 
-/// Minimal background — no gradient, just pure deep black.
-/// A very subtle bottom-to-top gradient gives depth without being flashy.
+/// Minimal background — subtle gradient that adapts to theme.
 class RadioBackground extends StatelessWidget {
   const RadioBackground({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
+    final c = AppColorScheme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          stops: <double>[0.0, 0.35, 1.0],
+          stops: const <double>[0.0, 0.35, 1.0],
           colors: <Color>[
-            Color(0xFF0F1210),
-            AppColors.background,
-            AppColors.background,
+            isDark ? const Color(0xFF0F1210) : const Color(0xFFE8EBE9),
+            c.background,
+            c.background,
           ],
         ),
       ),

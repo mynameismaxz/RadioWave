@@ -265,7 +265,7 @@ class RadioController extends ChangeNotifier {
     });
 
     try {
-      await player.playUrl(station.url);
+      await player.playStation(station);
       _hasLoadedStation = true;
       _loadingTimeout?.cancel();
     } on TimeoutException {
