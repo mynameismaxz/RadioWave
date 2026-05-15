@@ -1,0 +1,10 @@
+{
+  "name": "RadioWave",
+  "short_name": "RadioWave",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#11131A",
+  "theme_color": "#11131A",
+  "description": "A cross-platform internet radio app.",
+  "orientation": "portrait-primary"
+}

@@ -1,0 +1,134 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+import '../../../../app/theme/app_colors.dart';
+import '../../../../data/models/app_toast.dart';
+import '../../state/radio_controller.dart';
+import 'glass.dart';
+
+class AddStationPanel extends StatefulWidget {
+  const AddStationPanel({required this.controller, super.key});
+
+  final RadioController controller;
+
+  @override
+  State<AddStationPanel> createState() => _AddStationPanelState();
+}
+
+class _AddStationPanelState extends State<AddStationPanel> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _urlController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _urlController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 560;
+          final nameField = TextField(
+            controller: _nameController,
+            style: const TextStyle(fontSize: 14),
+            cursorColor: Colors.white,
+            decoration: glassInputDecoration(hintText: 'Station name'),
+          );
+          final urlField = TextField(
+            controller: _urlController,
+            keyboardType: TextInputType.url,
+            style: const TextStyle(fontSize: 14),
+            cursorColor: Colors.white,
+            decoration: glassInputDecoration(
+              hintText: 'Stream URL (e.g. https://...)',
+            ),
+          );
+          final addButton = FilledButton(
+            onPressed: () => unawaited(_addStation()),
+            style: FilledButton.styleFrom(
+              minimumSize: Size(isCompact ? 0 : 124, 46),
+              backgroundColor: AppColors.accent,
+              foregroundColor: AppColors.background,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            child: const Text(
+              'Add Station',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          );
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              if (isCompact)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    nameField,
+                    const SizedBox(height: 8),
+                    urlField,
+                    const SizedBox(height: 10),
+                    addButton,
+                  ],
+                )
+              else
+                Row(
+                  children: <Widget>[
+                    Expanded(child: nameField),
+                    const SizedBox(width: 8),
+                    Expanded(child: urlField),
+                    const SizedBox(width: 10),
+                    addButton,
+                  ],
+                ),
+              const SizedBox(height: 10),
+              const Text(
+                'Paste a direct MP3, AAC, or OGG stream URL.',
+                style: TextStyle(
+                  color: AppColors.textTertiary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _addStation() async {
+    final name = _nameController.text.trim();
+    final url = _urlController.text.trim();
+
+    if (name.isEmpty) {
+      widget.controller.showToast('Please enter a station name', ToastType.error);
+      return;
+    }
+
+    if (url.isEmpty) {
+      widget.controller.showToast('Please enter a stream URL', ToastType.error);
+      return;
+    }
+
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+      widget.controller.showToast(
+        'Please enter a valid stream URL (e.g. https://...)',
+        ToastType.error,
+      );
+      return;
+    }
+
+    await widget.controller.addCustomStation(name, url);
+    _nameController.clear();
+    _urlController.clear();
+  }
+}
