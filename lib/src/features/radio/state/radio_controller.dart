@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../../../core/utils/iterable_ext.dart';
@@ -75,6 +76,10 @@ class RadioController extends ChangeNotifier {
   double volume = 80;
   bool isMuted = false;
   double preVolume = 80;
+  bool _systemVolumeListenerActive = false;
+  bool _writingSystemVolume = false;
+
+  bool get _useSystemVolume => !kIsWeb;
 
   Set<String> favoriteUuids = <String>{};
   List<AppToast> toasts = <AppToast>[];
@@ -95,11 +100,59 @@ class RadioController extends ChangeNotifier {
   Future<void> init() async {
     await favorites.init();
     favoriteUuids = favorites.getUuids().toSet();
-    await player.setVolume(volume / 100);
+    await _initVolume();
     _safeNotify();
 
     unawaited(_loadCountries());
     await loadDiscover();
+  }
+
+  Future<void> _initVolume() async {
+    if (!_useSystemVolume) {
+      await player.setVolume(volume / 100);
+      return;
+    }
+
+    try {
+      await FlutterVolumeController.updateShowSystemUI(false);
+      final sys = await FlutterVolumeController.getVolume();
+      if (sys != null) {
+        volume = (sys * 100).clamp(0, 100).toDouble();
+      }
+      await player.setVolume(1);
+      FlutterVolumeController.addListener(_onSystemVolumeChanged);
+      _systemVolumeListenerActive = true;
+    } catch (_) {
+      await player.setVolume(volume / 100);
+    }
+  }
+
+  void _onSystemVolumeChanged(double value) {
+    if (_writingSystemVolume || _disposed) return;
+    final next = (value * 100).clamp(0, 100).toDouble();
+    if ((next - volume).abs() < 0.5) return;
+    volume = next;
+    if (volume > 0 && isMuted) {
+      isMuted = false;
+    }
+    _safeNotify();
+  }
+
+  Future<void> _applyVolume(double normalized) async {
+    final clamped = normalized.clamp(0.0, 1.0).toDouble();
+    if (!_useSystemVolume) {
+      await player.setVolume(clamped);
+      return;
+    }
+
+    _writingSystemVolume = true;
+    try {
+      await FlutterVolumeController.setVolume(clamped);
+    } catch (_) {
+      await player.setVolume(clamped);
+    } finally {
+      _writingSystemVolume = false;
+    }
   }
 
   Future<void> _loadCountries() async {
@@ -446,7 +499,7 @@ class RadioController extends ChangeNotifier {
 
   Future<void> setVolume(double value) async {
     volume = value.clamp(0, 100).toDouble();
-    await player.setVolume(volume / 100);
+    await _applyVolume(volume / 100);
 
     if (volume > 0 && isMuted) {
       isMuted = false;
@@ -459,12 +512,12 @@ class RadioController extends ChangeNotifier {
     if (isMuted) {
       isMuted = false;
       volume = preVolume;
-      await player.setVolume(preVolume / 100);
+      await _applyVolume(preVolume / 100);
     } else {
       preVolume = volume;
       isMuted = true;
       volume = 0;
-      await player.setVolume(0);
+      await _applyVolume(0);
     }
 
     _safeNotify();
@@ -577,6 +630,10 @@ class RadioController extends ChangeNotifier {
     }
     _playerStateSub?.cancel();
     _playbackEventSub?.cancel();
+    if (_systemVolumeListenerActive) {
+      FlutterVolumeController.removeListener();
+      _systemVolumeListenerActive = false;
+    }
     unawaited(player.dispose());
     api.dispose();
     super.dispose();
