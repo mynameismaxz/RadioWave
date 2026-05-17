@@ -82,4 +82,20 @@ flutter run -d ios
 ## Platform Notes
 
 See [docs/platform_setup.md](docs/platform_setup.md) for Android/iOS/macOS network settings and web playback caveats.
+
+## Deploy to Cloudflare Workers
+
+This project deploys the Flutter web production output through Wrangler static assets.
+
+In Cloudflare Workers > Settings > Build, use:
+
+```text
+Build command: bash scripts/cloudflare_build.sh
+Deploy command: npx wrangler deploy
+Version command: npx wrangler versions upload
+Root directory: /
+```
+
+The build script installs Flutter stable in the Cloudflare build environment, runs `flutter pub get`, then creates `build/web`. Wrangler is configured to upload `build/web` and to fall back to `index.html` for Flutter's single-page app routes.
+
 # RadioWave
