@@ -20,18 +20,28 @@ class RadioWaveHome extends StatefulWidget {
   State<RadioWaveHome> createState() => _RadioWaveHomeState();
 }
 
-class _RadioWaveHomeState extends State<RadioWaveHome> {
+class _RadioWaveHomeState extends State<RadioWaveHome>
+    with WidgetsBindingObserver {
   late final RadioController controller;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     controller = RadioController();
     unawaited(controller.init());
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      unawaited(controller.stopPlayback());
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     controller.dispose();
     super.dispose();
   }

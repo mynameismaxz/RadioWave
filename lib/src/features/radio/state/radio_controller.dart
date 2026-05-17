@@ -634,6 +634,7 @@ class RadioController extends ChangeNotifier {
       FlutterVolumeController.removeListener();
       _systemVolumeListenerActive = false;
     }
+    unawaited(player.stop());
     unawaited(player.dispose());
     api.dispose();
     super.dispose();
