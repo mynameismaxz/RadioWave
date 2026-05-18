@@ -33,9 +33,9 @@ class PlayerBar extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                height: 96,
+                height: 88,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
                   color: c.surfaceHighlight.withValues(
                     alpha: isDark ? 0.82 : 0.88,
@@ -98,7 +98,7 @@ class _ExpandedPlayerBar extends StatelessWidget {
               _PlayerArtwork(
                 isPlaying: controller.playerIsPlaying,
                 url: stationFavicon,
-                size: 58,
+                size: 52,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -132,7 +132,7 @@ class _ExpandedPlayerBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               _TransportControls(controller: controller, large: true),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               const _LiveRail(),
             ],
           ),
