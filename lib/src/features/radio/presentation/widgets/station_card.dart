@@ -111,6 +111,7 @@ class StationArtwork extends StatelessWidget {
             : Image.network(
                 url,
                 fit: BoxFit.cover,
+                webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                 errorBuilder: (_, __, ___) =>
                     Icon(Icons.radio_rounded, color: c.textTertiary, size: 22),
               ),

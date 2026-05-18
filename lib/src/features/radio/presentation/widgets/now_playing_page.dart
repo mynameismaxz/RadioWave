@@ -301,6 +301,7 @@ class _ArtworkSection extends StatelessWidget {
     return Image.network(
       url,
       fit: BoxFit.cover,
+      webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
       errorBuilder: (_, __, ___) => const _FallbackArtwork(),
     );
   }

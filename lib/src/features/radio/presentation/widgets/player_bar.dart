@@ -256,6 +256,7 @@ class _PlayerArtwork extends StatelessWidget {
             : Image.network(
                 url,
                 fit: BoxFit.cover,
+                webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
                 errorBuilder: (_, __, ___) => Icon(
                   isPlaying ? Icons.graphic_eq_rounded : Icons.radio_rounded,
                   color: isPlaying ? c.textPrimary : c.textTertiary,
