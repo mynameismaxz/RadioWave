@@ -97,6 +97,12 @@ class RadioController extends ChangeNotifier {
 
   bool get hasSleepTimer => sleepTimerRemaining != null;
 
+  List<Station> _displayableFavorites(List<Station> source) {
+    return source
+        .where((station) => station.isCustom || station.lastCheckOk)
+        .toList();
+  }
+
   /// Index of current station in the stations list (-1 if not found).
   int get _currentIndex {
     final station = currentStation;
@@ -243,7 +249,7 @@ class RadioController extends ChangeNotifier {
 
   Future<void> loadFavorites() async {
     final loadId = ++_favoritesLoadId;
-    final favoriteList = favorites.getAll();
+    final favoriteList = _displayableFavorites(favorites.getAll());
     _loadedDiscoverKey = null;
 
     if (favoriteList.isEmpty) {
@@ -284,15 +290,23 @@ class RadioController extends ChangeNotifier {
       favoriteUuids = currentUuids.toSet();
       stations = currentUuids
           .map((uuid) {
-            return freshByUuid[uuid] ??
-                favoriteList
-                    .where((station) => station.uuid == uuid)
-                    .firstOrNull;
+            final localStation = favoriteList
+                .where((station) => station.uuid == uuid)
+                .firstOrNull;
+            if (localStation?.isCustom ?? false) {
+              return localStation;
+            }
+
+            return freshByUuid[uuid];
           })
           .whereType<Station>()
           .toList();
 
       stationCount = stations.length;
+      if (stations.isEmpty) {
+        emptyMessage =
+            'No playable favorite stations right now. Try refreshing later.';
+      }
       viewState =
           stations.isEmpty ? StationViewState.empty : StationViewState.list;
       _safeNotify();

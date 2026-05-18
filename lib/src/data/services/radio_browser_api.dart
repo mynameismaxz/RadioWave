@@ -241,7 +241,10 @@ class RadioBrowserApi {
     return (data is List ? data : const <dynamic>[])
         .whereType<Map<String, dynamic>>()
         .map(Station.fromRadioBrowser)
-        .where((station) => station.uuid.isNotEmpty && station.url.isNotEmpty)
+        .where((station) =>
+            station.uuid.isNotEmpty &&
+            station.url.isNotEmpty &&
+            station.lastCheckOk)
         .toList();
   }
 

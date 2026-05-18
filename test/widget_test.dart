@@ -13,7 +13,28 @@ void main() {
     expect(station.name, 'Local FM');
     expect(station.url, 'https://example.com/stream.mp3');
     expect(station.tags, contains('custom'));
+    expect(station.lastCheckOk, isTrue);
     expect(station.toFavoriteJson()['name'], 'Local FM');
+  });
+
+  test('reads Radio Browser station health from lastcheckok', () {
+    final station = Station.fromRadioBrowser({
+      'stationuuid': 'station-1',
+      'name': 'Healthy FM',
+      'url': 'https://example.com/stream.mp3',
+      'lastcheckok': 1,
+    });
+
+    expect(station.lastCheckOk, isTrue);
+
+    final brokenStation = Station.fromRadioBrowser({
+      'stationuuid': 'station-2',
+      'name': 'Broken FM',
+      'url': 'https://example.com/broken.mp3',
+      'lastcheckok': 0,
+    });
+
+    expect(brokenStation.lastCheckOk, isFalse);
   });
 
   test('radio tabs expose user-facing labels', () {

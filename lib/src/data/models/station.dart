@@ -15,6 +15,7 @@ class Station {
     required this.bitrate,
     required this.votes,
     required this.clickCount,
+    required this.lastCheckOk,
     required this.raw,
   });
 
@@ -31,6 +32,7 @@ class Station {
   final int bitrate;
   final int votes;
   final int clickCount;
+  final bool lastCheckOk;
   final Map<String, dynamic> raw;
 
   factory Station.fromRadioBrowser(Map<String, dynamic> raw) {
@@ -51,6 +53,7 @@ class Station {
       bitrate: intValue(raw['bitrate']),
       votes: intValue(raw['votes']),
       clickCount: intValue(raw['clickcount']),
+      lastCheckOk: intValue(raw['lastcheckok']) == 1,
       raw: raw,
     );
   }
@@ -72,6 +75,8 @@ class Station {
       bitrate: intValue(json['bitrate']),
       votes: intValue(json['votes']),
       clickCount: intValue(json['clickcount']),
+      lastCheckOk: !json.containsKey('lastcheckok') ||
+          intValue(json['lastcheckok']) == 1,
       raw: const <String, dynamic>{},
     );
   }
@@ -91,6 +96,7 @@ class Station {
       bitrate: 0,
       votes: 0,
       clickCount: 0,
+      lastCheckOk: true,
       raw: const <String, dynamic>{},
     );
   }
@@ -110,7 +116,10 @@ class Station {
       'bitrate': bitrate,
       'votes': votes,
       'clickcount': clickCount,
+      'lastcheckok': lastCheckOk ? 1 : 0,
       'addedAt': DateTime.now().millisecondsSinceEpoch,
     };
   }
+
+  bool get isCustom => uuid.startsWith('custom-');
 }
