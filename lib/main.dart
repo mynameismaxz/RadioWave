@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 
 import 'src/app/radio_wave_app.dart';
+import 'src/app/theme/theme_notifier.dart';
 import 'src/data/services/radio_audio_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   JustAudioMediaKit.ensureInitialized();
+  await themeNotifier.init();
   radioAudioHandler = await _initAudioHandler();
   runApp(const RadioWaveApp());
 }

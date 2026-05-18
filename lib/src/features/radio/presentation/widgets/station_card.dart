@@ -24,67 +24,61 @@ class StationCard extends StatelessWidget {
     final isCurrent = controller.currentStation?.uuid == station.uuid;
     final isFavorite = controller.isFavorite(station.uuid);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () => unawaited(controller.playStation(station)),
-        hoverColor: c.cardHover,
-        splashColor: c.accent.withValues(alpha: 0.06),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: isCurrent ? c.surfaceHighlight : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: <Widget>[
-              StationArtwork(
-                url: station.favicon,
-                isPlaying: isPlaying,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      station.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: isCurrent
-                            ? c.accent
-                            : c.textPrimary,
-                        letterSpacing: -0.2,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Material(
+        color: isCurrent ? c.cardHover : Colors.transparent,
+        borderRadius: BorderRadius.circular(6),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: () => unawaited(controller.playStation(station)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              children: <Widget>[
+                StationArtwork(url: station.favicon, isPlaying: isPlaying),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        station.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: isCurrent ? c.textPrimary : c.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    StationMeta(station: station),
-                  ],
+                      const SizedBox(height: 4),
+                      StationMeta(station: station),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              if (isPlaying)
-                const Padding(
-                  padding: EdgeInsets.only(right: 8),
-                  child: PlayingBars(),
+                if (isPlaying)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 8),
+                    child: PlayingBars(),
+                  ),
+                IconButton(
+                  tooltip: isFavorite
+                      ? 'Remove from favorites'
+                      : 'Add to favorites',
+                  onPressed: () =>
+                      unawaited(controller.toggleFavoriteStation(station)),
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(
+                    isFavorite
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    size: 20,
+                    color: isFavorite ? c.textPrimary : c.textTertiary,
+                  ),
                 ),
-              IconButton(
-                tooltip: isFavorite ? 'Remove from favorites' : 'Add to favorites',
-                onPressed: () => unawaited(
-                  controller.toggleFavoriteStation(station),
-                ),
-                visualDensity: VisualDensity.compact,
-                icon: Icon(
-                  isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                  size: 20,
-                  color: isFavorite ? c.accent : c.textTertiary,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -105,31 +99,20 @@ class StationArtwork extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
+
     return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(4),
       child: Container(
         width: 48,
         height: 48,
-        decoration: BoxDecoration(
-          color: c.surfaceHighlight,
-          borderRadius: BorderRadius.circular(6),
-        ),
+        color: c.card,
         child: url.isEmpty
-            ? Icon(
-                Icons.radio_rounded,
-                color: c.textTertiary,
-                size: 22,
-              )
+            ? Icon(Icons.radio_rounded, color: c.textTertiary, size: 22)
             : Image.network(
                 url,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) {
-                  return Icon(
-                    Icons.radio_rounded,
-                    color: c.textTertiary,
-                    size: 22,
-                  );
-                },
+                errorBuilder: (_, __, ___) =>
+                    Icon(Icons.radio_rounded, color: c.textTertiary, size: 22),
               ),
       ),
     );
@@ -145,19 +128,10 @@ class StationMeta extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
     final parts = <String>[];
-
-    if (station.country.isNotEmpty) {
-      parts.add(station.country);
-    }
-
+    if (station.country.isNotEmpty) parts.add(station.country);
     final visibleTags = station.tags.take(2).join(', ');
-    if (visibleTags.isNotEmpty) {
-      parts.add(visibleTags);
-    }
-
-    if (station.bitrate > 0) {
-      parts.add('${station.bitrate} kbps');
-    }
+    if (visibleTags.isNotEmpty) parts.add(visibleTags);
+    if (station.bitrate > 0) parts.add('${station.bitrate} kbps');
 
     return Text(
       parts.join(' · '),
@@ -165,15 +139,13 @@ class StationMeta extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
         color: c.textTertiary,
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: FontWeight.w400,
       ),
     );
   }
 }
 
-/// Animated equalizer bars shown for currently playing station —
-/// mimics Spotify's playing indicator.
 class PlayingBars extends StatefulWidget {
   const PlayingBars({super.key});
 
@@ -218,7 +190,7 @@ class _PlayingBarsState extends State<PlayingBars>
               height: height,
               margin: const EdgeInsets.symmetric(horizontal: 1),
               decoration: BoxDecoration(
-                color: c.accent,
+                color: c.textPrimary,
                 borderRadius: BorderRadius.circular(2),
               ),
             );

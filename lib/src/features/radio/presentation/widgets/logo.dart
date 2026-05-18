@@ -3,36 +3,39 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_color_scheme.dart';
 
 class Logo extends StatelessWidget {
-  const Logo({super.key});
+  const Logo({this.compact = false, super.key});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
+
+    if (compact) {
+      return Text(
+        'RadioWave',
+        style: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.8,
+          color: c.textPrimary,
+        ),
+      );
+    }
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color: c.accent,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            Icons.radio_rounded,
-            color: c.background,
-            size: 20,
-          ),
-        ),
-        const SizedBox(width: 10),
+        Icon(Icons.radio_rounded, color: c.textPrimary, size: 28),
+        const SizedBox(width: 8),
         Text(
           'RadioWave',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
-            letterSpacing: -0.5,
+            letterSpacing: -0.4,
             color: c.textPrimary,
           ),
         ),

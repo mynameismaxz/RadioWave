@@ -26,7 +26,7 @@ class RadioController extends ChangeNotifier {
     _playbackEventSub = this.player.playbackEventStream.listen(
       (_) {},
       onError: (Object error, StackTrace stackTrace) {
-        _showPlaybackError('Stream error');
+        _handlePlaybackError();
       },
     );
   }
@@ -46,6 +46,13 @@ class RadioController extends ChangeNotifier {
   String? _loadedDiscoverKey;
   Future<void> Function()? _retryFn;
   Timer? _loadingTimeout;
+  Timer? _reconnectTimer;
+  Timer? _bufferingReconnectTimer;
+  bool _userRequestedPlayback = false;
+  bool _isStartingPlayback = false;
+  int _reconnectAttempts = 0;
+  static const int _maxReconnectAttempts = 3;
+  static const Duration _bufferingReconnectDelay = Duration(seconds: 15);
 
   // Sleep timer
   Timer? _sleepTimer;
@@ -300,6 +307,9 @@ class RadioController extends ChangeNotifier {
       return;
     }
 
+    _cancelAutoReconnect();
+    _userRequestedPlayback = true;
+    _reconnectAttempts = 0;
     currentStation = station;
     playerBarVisible = true;
     playerBarPaused = false;
@@ -311,13 +321,14 @@ class RadioController extends ChangeNotifier {
     // Safety timeout — if still loading after 12s, force stop
     _loadingTimeout?.cancel();
     _loadingTimeout = Timer(const Duration(seconds: 12), () {
-      if (playerIsLoading && !_disposed) {
+      if (playerIsLoading && !_disposed && _isStartingPlayback) {
         _showPlaybackError('Connection timed out — try another station');
         unawaited(player.stop());
       }
     });
 
     try {
+      _isStartingPlayback = true;
       await player.playStation(station);
       _hasLoadedStation = true;
       _loadingTimeout?.cancel();
@@ -328,12 +339,16 @@ class RadioController extends ChangeNotifier {
     } catch (_) {
       _loadingTimeout?.cancel();
       _showPlaybackError('Cannot play this station');
+    } finally {
+      _isStartingPlayback = false;
     }
   }
 
   /// Stop any current playback and reset to idle state.
   Future<void> stopPlayback() async {
     _loadingTimeout?.cancel();
+    _cancelAutoReconnect();
+    _userRequestedPlayback = false;
     await player.stop();
     playerIsPlaying = false;
     playerIsLoading = false;
@@ -356,11 +371,15 @@ class RadioController extends ChangeNotifier {
     }
 
     if (playerIsPlaying) {
+      _cancelAutoReconnect();
+      _userRequestedPlayback = false;
       await player.pause();
       return;
     }
 
     if (_hasLoadedStation) {
+      _userRequestedPlayback = true;
+      _reconnectAttempts = 0;
       playerBarPaused = false;
       playerStatus = 'Connecting...';
       _safeNotify();
@@ -388,6 +407,11 @@ class RadioController extends ChangeNotifier {
 
   /// Start a sleep timer that stops playback after [duration].
   void startSleepTimer(Duration duration) {
+    if (duration < const Duration(minutes: 1)) {
+      showToast('Choose at least 1 minute', ToastType.error);
+      return;
+    }
+
     cancelSleepTimer();
     sleepTimerTotal = duration;
     sleepTimerRemaining = duration;
@@ -407,8 +431,10 @@ class RadioController extends ChangeNotifier {
       _stopPlaybackForSleep();
     });
 
-    final minutes = duration.inMinutes;
-    showToast('Sleep timer set for $minutes min', ToastType.info);
+    showToast(
+      'Sleep timer set for ${_formatSleepTimerDuration(duration)}',
+      ToastType.info,
+    );
   }
 
   /// Cancel any active sleep timer.
@@ -424,9 +450,15 @@ class RadioController extends ChangeNotifier {
 
   Future<void> _stopPlaybackForSleep() async {
     cancelSleepTimer();
-    if (playerIsPlaying) {
-      await player.pause();
-    }
+    _cancelAutoReconnect();
+    _userRequestedPlayback = false;
+    await player.stop();
+    playerIsPlaying = false;
+    playerIsLoading = false;
+    playerBarPaused = true;
+    playerStatus = 'Stopped';
+    _hasLoadedStation = false;
+    _safeNotify();
     showToast('Sleep timer ended — playback stopped', ToastType.info);
   }
 
@@ -556,21 +588,40 @@ class RadioController extends ChangeNotifier {
 
   void _onPlayerState(PlayerState state) {
     final processingState = state.processingState;
-    final isConnecting = processingState == ProcessingState.loading ||
+    final isTerminal = processingState == ProcessingState.completed ||
+        processingState == ProcessingState.idle;
+    final isActivelyPlaying = state.playing && !isTerminal;
+    final isBuffering = processingState == ProcessingState.loading ||
         processingState == ProcessingState.buffering;
+    final isConnecting = !isActivelyPlaying && isBuffering;
     final hasStation = currentStation != null;
+    final stoppedUnexpectedly = _userRequestedPlayback &&
+        _hasLoadedStation &&
+        hasStation &&
+        !_isStartingPlayback &&
+        !isConnecting &&
+        !isActivelyPlaying;
 
     playerIsLoading = isConnecting;
-    playerIsPlaying = state.playing &&
-        !isConnecting &&
-        processingState != ProcessingState.completed;
+    playerIsPlaying = isActivelyPlaying;
 
     if (isConnecting && hasStation) {
       playerStatus = 'Connecting...';
       playerBarPaused = false;
-    } else if (state.playing && processingState == ProcessingState.ready) {
+      if (_userRequestedPlayback && _hasLoadedStation && !_isStartingPlayback) {
+        _scheduleBufferingReconnect();
+      }
+    } else if (isActivelyPlaying) {
+      _cancelAutoReconnect();
+      _reconnectAttempts = 0;
       playerStatus = 'Now Playing';
       playerBarPaused = false;
+    } else if (stoppedUnexpectedly) {
+      playerIsPlaying = false;
+      playerIsLoading = true;
+      playerBarPaused = false;
+      playerStatus = 'Reconnecting...';
+      _scheduleAutoReconnect();
     } else if (processingState == ProcessingState.completed) {
       playerIsPlaying = false;
       playerBarPaused = true;
@@ -584,6 +635,8 @@ class RadioController extends ChangeNotifier {
   }
 
   void _showPlaybackError(String message) {
+    _cancelAutoReconnect();
+    _userRequestedPlayback = false;
     showToast(message, ToastType.error, duration: const Duration(seconds: 5));
     playerIsPlaying = false;
     playerIsLoading = false;
@@ -593,8 +646,122 @@ class RadioController extends ChangeNotifier {
     _safeNotify();
   }
 
+  void _handlePlaybackError() {
+    if (_disposed ||
+        !_userRequestedPlayback ||
+        !_hasLoadedStation ||
+        currentStation == null) {
+      _showPlaybackError('Stream error');
+      return;
+    }
+
+    playerIsPlaying = false;
+    playerIsLoading = true;
+    playerBarPaused = false;
+    playerStatus = 'Reconnecting...';
+    _scheduleAutoReconnect();
+    _safeNotify();
+  }
+
+  void _scheduleAutoReconnect() {
+    _cancelBufferingReconnect();
+    if (_disposed ||
+        _reconnectTimer != null ||
+        currentStation == null ||
+        !_userRequestedPlayback) {
+      return;
+    }
+
+    if (_reconnectAttempts >= _maxReconnectAttempts) {
+      _userRequestedPlayback = false;
+      playerIsLoading = false;
+      playerBarPaused = true;
+      playerStatus = 'Paused';
+      _hasLoadedStation = false;
+      showToast('Stream stopped. Tap play to retry.', ToastType.error);
+      return;
+    }
+
+    _reconnectAttempts += 1;
+    _reconnectTimer = Timer(const Duration(seconds: 2), () {
+      _reconnectTimer = null;
+      final station = currentStation;
+      if (_disposed || station == null || !_userRequestedPlayback) {
+        return;
+      }
+      unawaited(_reconnectStation(station));
+    });
+  }
+
+  void _scheduleBufferingReconnect() {
+    if (_disposed ||
+        _bufferingReconnectTimer != null ||
+        currentStation == null ||
+        !_userRequestedPlayback) {
+      return;
+    }
+
+    _bufferingReconnectTimer = Timer(_bufferingReconnectDelay, () {
+      _bufferingReconnectTimer = null;
+      if (_disposed ||
+          !_userRequestedPlayback ||
+          !_hasLoadedStation ||
+          !playerIsLoading ||
+          currentStation == null) {
+        return;
+      }
+
+      playerStatus = 'Reconnecting...';
+      _scheduleAutoReconnect();
+      _safeNotify();
+    });
+  }
+
+  Future<void> _reconnectStation(Station station) async {
+    try {
+      _isStartingPlayback = true;
+      playerStatus = 'Reconnecting...';
+      playerIsLoading = true;
+      playerBarPaused = false;
+      _safeNotify();
+
+      await player.playStation(station);
+      _hasLoadedStation = true;
+    } catch (_) {
+      _scheduleAutoReconnect();
+    } finally {
+      _isStartingPlayback = false;
+    }
+  }
+
+  void _cancelAutoReconnect() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _cancelBufferingReconnect();
+  }
+
+  void _cancelBufferingReconnect() {
+    _bufferingReconnectTimer?.cancel();
+    _bufferingReconnectTimer = null;
+  }
+
   String _discoverKey(String query, String countryCode) {
     return '$query::$countryCode';
+  }
+
+  String _formatSleepTimerDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+
+    if (hours <= 0) {
+      return '$minutes min';
+    }
+
+    if (minutes == 0) {
+      return '$hours hr';
+    }
+
+    return '$hours hr $minutes min';
   }
 
   String _emptyDiscoverMessage(String query, String countryCode) {
@@ -623,6 +790,7 @@ class RadioController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _loadingTimeout?.cancel();
+    _cancelAutoReconnect();
     _sleepTimer?.cancel();
     _sleepTickTimer?.cancel();
     for (final timer in _toastTimers) {

@@ -17,7 +17,7 @@ extension RadioTabLabel on RadioTab {
   IconData get icon {
     switch (this) {
       case RadioTab.discover:
-        return Icons.play_circle_outline_rounded;
+        return Icons.explore_outlined;
       case RadioTab.favorites:
         return Icons.favorite_border_rounded;
       case RadioTab.add:

@@ -20,7 +20,7 @@ class CountryFilter extends StatelessWidget {
     final countriesReady = controller.countriesReady;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Row(
         children: <Widget>[
           Icon(
@@ -101,13 +101,13 @@ class CountryFilter extends StatelessWidget {
   }
 
   Future<void> _showCountrySearch(BuildContext context) async {
-    final c = AppColorScheme.of(context);
     final selectedCode = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: c.surfaceElevated,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black38,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return _CountrySearchSheet(
@@ -157,49 +157,68 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
   @override
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final query = _searchController.text.trim().toLowerCase();
     final filteredCountries = widget.countries.where((country) {
       if (query.isEmpty) {
         return true;
       }
-
       return country.name.toLowerCase().contains(query) ||
           country.code.toLowerCase().contains(query);
     }).toList();
 
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 16,
-          bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
-        ),
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.72,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      'Select Country',
-                      style: TextStyle(
-                        color: c.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0,
+    return Container(
+      decoration: BoxDecoration(
+        color: c.surfaceElevated,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        border: Border(top: BorderSide(color: c.border)),
+      ),
+      child: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 8,
+                bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+              ),
+              child: SizedBox(
+                height: MediaQuery.sizeOf(context).height * 0.72,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.30)
+                              : Colors.black.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    tooltip: 'Close',
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ],
-              ),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            'Select Country',
+                            style: TextStyle(
+                              color: c.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Close',
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                    ),
               const SizedBox(height: 12),
               TextField(
                 controller: _searchController,
@@ -268,9 +287,10 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
                         },
                       ),
               ),
-            ],
-          ),
-        ),
+                  ],
+                ),
+              ),
+            ),
       ),
     );
   }
@@ -334,7 +354,7 @@ class _CountryOptionTile extends StatelessWidget {
               if (selected)
                 Icon(
                   Icons.check_rounded,
-                  color: c.accent,
+                  color: c.textPrimary,
                   size: 20,
                 ),
             ],

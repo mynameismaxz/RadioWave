@@ -9,6 +9,7 @@ import 'widgets/add_station_panel.dart';
 import 'widgets/app_header.dart';
 import 'widgets/country_filter.dart';
 import 'widgets/player_bar.dart';
+import 'widgets/sidebar_nav.dart';
 import 'widgets/station_viewport.dart';
 import 'widgets/tab_nav.dart';
 import 'widgets/toast_overlay.dart';
@@ -51,40 +52,51 @@ class _RadioWaveHomeState extends State<RadioWaveHome>
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
+        final c = AppColorScheme.of(context);
+
         return Scaffold(
+          backgroundColor: c.background,
           body: Stack(
             children: <Widget>[
-              // ── Clean solid background ──
-              const Positioned.fill(child: RadioBackground()),
-
-              // ── Main content ──
               SafeArea(
                 bottom: false,
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 720),
-                    child: Column(
-                      children: <Widget>[
-                        AppHeader(controller: controller),
-                        if (controller.currentTab == RadioTab.discover)
-                          CountryFilter(controller: controller),
-                        TabNav(controller: controller),
-                        if (controller.currentTab == RadioTab.add)
-                          AddStationPanel(controller: controller),
-                        Expanded(child: StationViewport(controller: controller)),
-                      ],
-                    ),
-                  ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final wide = constraints.maxWidth >= 900;
+
+                    if (wide) {
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          SidebarNav(controller: controller),
+                          Expanded(
+                            child: _MainColumn(
+                              controller: controller,
+                              showTabNav: false,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 720),
+                        child: _MainColumn(
+                          controller: controller,
+                          showTabNav: true,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
-
-              // ── Now playing bar ──
-              Align(
-                alignment: Alignment.bottomCenter,
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
                 child: PlayerBar(controller: controller),
               ),
-
-              // ── Toast notifications ──
               ToastOverlay(toasts: controller.toasts),
             ],
           ),
@@ -94,28 +106,28 @@ class _RadioWaveHomeState extends State<RadioWaveHome>
   }
 }
 
-/// Minimal background — subtle gradient that adapts to theme.
-class RadioBackground extends StatelessWidget {
-  const RadioBackground({super.key});
+class _MainColumn extends StatelessWidget {
+  const _MainColumn({
+    required this.controller,
+    required this.showTabNav,
+  });
+
+  final RadioController controller;
+  final bool showTabNav;
 
   @override
   Widget build(BuildContext context) {
-    final c = AppColorScheme.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          stops: const <double>[0.0, 0.35, 1.0],
-          colors: <Color>[
-            isDark ? const Color(0xFF0F1210) : const Color(0xFFE8EBE9),
-            c.background,
-            c.background,
-          ],
-        ),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppHeader(controller: controller, wide: !showTabNav),
+        if (controller.currentTab == RadioTab.discover)
+          CountryFilter(controller: controller),
+        if (showTabNav) TabNav(controller: controller),
+        if (controller.currentTab == RadioTab.add)
+          AddStationPanel(controller: controller),
+        Expanded(child: StationViewport(controller: controller)),
+      ],
     );
   }
 }

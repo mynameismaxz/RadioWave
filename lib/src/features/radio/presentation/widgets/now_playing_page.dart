@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../app/theme/app_color_scheme.dart';
 import '../../../../data/models/station.dart';
 import '../../state/radio_controller.dart';
+import 'glass.dart';
 
 /// Full-screen "Now Playing" page — Spotify style.
 /// Opens as a modal route from the mini player bar.
@@ -54,51 +57,55 @@ class NowPlayingPage extends StatelessWidget {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return Scaffold(
           backgroundColor: Colors.transparent,
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: const <double>[0.0, 0.45, 1.0],
-                colors: <Color>[
-                  isDark ? const Color(0xFF1A2A1E) : const Color(0xFFD5E8DB),
-                  isDark ? const Color(0xFF0D0D0D) : const Color(0xFFEEEEF0),
-                  c.background,
-                ],
-              ),
-            ),
-            child: SafeArea(
-              child: Column(
-                children: <Widget>[
-                  // ── Top bar ──
-                  _TopBar(controller: controller),
-
-                  // ── Artwork ──
-                  Expanded(
-                    flex: 5,
-                    child: _ArtworkSection(station: station),
+          body: Stack(
+            children: <Widget>[
+              // ── Translucent gradient background (lets orbs show through) ──
+              Positioned.fill(
+                child: ClipRect(
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          stops: const <double>[0.0, 0.5, 1.0],
+                          colors: <Color>[
+                            (isDark
+                                    ? const Color(0xFF0D1A12)
+                                    : const Color(0xFFD8EDFF))
+                                .withValues(alpha: 0.82),
+                            c.background.withValues(alpha: 0.88),
+                            c.background.withValues(alpha: 0.96),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-
-                  // ── Station info ──
-                  _StationInfo(
-                    station: station,
-                    isFavorite: isFavorite,
-                    controller: controller,
-                  ),
-
-                  // ── Live indicator bar ──
-                  const _LiveIndicator(),
-
-                  // ── Controls ──
-                  _PlaybackControls(controller: controller),
-
-                  // ── Bottom actions ──
-                  _BottomActions(controller: controller),
-
-                  const SizedBox(height: 16),
-                ],
+                ),
               ),
-            ),
+              // ── Main content ──
+              SafeArea(
+                child: Column(
+                  children: <Widget>[
+                    _TopBar(controller: controller),
+                    Expanded(
+                      flex: 5,
+                      child: _ArtworkSection(station: station),
+                    ),
+                    _StationInfo(
+                      station: station,
+                      isFavorite: isFavorite,
+                      controller: controller,
+                    ),
+                    const _LiveIndicator(),
+                    _PlaybackControls(controller: controller),
+                    _BottomActions(controller: controller),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -157,34 +164,56 @@ class _TopBar extends StatelessWidget {
   }
 
   void _showOptionsSheet(BuildContext context) {
-    final c = AppColorScheme.of(context);
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: c.surfaceElevated,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black38,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetCtx) {
         final sc = AppColorScheme.of(sheetCtx);
+        final isDarkSheet = Theme.of(sheetCtx).brightness == Brightness.dark;
         final station = controller.currentStation;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: sc.textTertiary,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [sc.glassHighlight, sc.glassBase, sc.glassDeep],
                 ),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border(
+                  top: BorderSide(color: sc.glassEdge, width: 0.8),
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Container(
+                        width: 36,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: isDarkSheet
+                              ? Colors.white.withValues(alpha: 0.30)
+                              : Colors.black.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
                 if (station != null) ...<Widget>[
                   ListTile(
-                    leading: Icon(Icons.info_outline_rounded, color: sc.textSecondary),
+                    leading: Icon(Icons.info_outline_rounded,
+                        color: sc.textSecondary),
                     title: const Text('Station Info'),
                     subtitle: Text(
                       '${station.codec.isNotEmpty ? station.codec : "Unknown"} · ${station.bitrate > 0 ? "${station.bitrate} kbps" : "Unknown bitrate"}',
@@ -193,7 +222,8 @@ class _TopBar extends StatelessWidget {
                   ),
                   if (station.homepage.isNotEmpty)
                     ListTile(
-                      leading: Icon(Icons.language_rounded, color: sc.textSecondary),
+                      leading:
+                          Icon(Icons.language_rounded, color: sc.textSecondary),
                       title: const Text('Visit Website'),
                       subtitle: Text(
                         station.homepage,
@@ -203,7 +233,10 @@ class _TopBar extends StatelessWidget {
                       ),
                     ),
                 ],
-              ],
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         );
@@ -229,25 +262,30 @@ class _ArtworkSection extends StatelessWidget {
       child: Center(
         child: AspectRatio(
           aspectRatio: 1,
-          child: Container(
-            decoration: BoxDecoration(
-              color: c.surfaceHighlight,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: c.accent.withValues(alpha: 0.15),
-                  blurRadius: 60,
-                  spreadRadius: 10,
+          child: LiquidGlassContainer(
+            borderRadius: 20,
+            blurSigma: 20,
+            child: Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: _buildArtwork(),
                 ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  blurRadius: 30,
+                // subtle glow overlay
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: c.accent.withValues(alpha: 0.18),
+                        blurRadius: 60,
+                        spreadRadius: 10,
+                      ),
+                    ],
+                  ),
                 ),
               ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: _buildArtwork(),
             ),
           ),
         ),
@@ -357,7 +395,9 @@ class _StationInfo extends StatelessWidget {
             icon: AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
               child: Icon(
-                isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                isFavorite
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
                 key: ValueKey(isFavorite),
                 size: 28,
                 color: isFavorite ? c.accent : c.textTertiary,
@@ -504,9 +544,9 @@ class _LiveBarPainter extends CustomPainter {
         color.withValues(alpha: 0.0),
       ],
     );
-    final rect = Rect.fromLTWH(center - shimmerWidth / 2, 0, shimmerWidth, size.height);
-    final paint = Paint()
-      ..shader = gradient.createShader(rect);
+    final rect =
+        Rect.fromLTWH(center - shimmerWidth / 2, 0, shimmerWidth, size.height);
+    final paint = Paint()..shader = gradient.createShader(rect);
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, const Radius.circular(2)),
       paint,
@@ -601,28 +641,35 @@ class _LargePlayButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
-      width: 64,
-      height: 64,
-      child: Material(
-        color: c.textPrimary,
-        shape: const CircleBorder(),
-        elevation: 8,
-        shadowColor: Colors.black.withValues(alpha: 0.4),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: controller.currentStation == null
-              ? null
-              : () => unawaited(controller.togglePlayPause()),
-          child: Center(
-            child: Icon(
-              controller.playerIsLoading
-                  ? Icons.stop_rounded
-                  : controller.playerIsPlaying
-                      ? Icons.pause_rounded
-                      : Icons.play_arrow_rounded,
-              size: 34,
-              color: c.background,
+      width: 68,
+      height: 68,
+      child: ClipOval(
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Material(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.92)
+                : c.textPrimary,
+            shape: const CircleBorder(),
+            elevation: 0,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: controller.currentStation == null
+                  ? null
+                  : () => unawaited(controller.togglePlayPause()),
+              child: Center(
+                child: Icon(
+                  controller.playerIsLoading
+                      ? Icons.stop_rounded
+                      : controller.playerIsPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                  size: 36,
+                  color: isDark ? const Color(0xFF080C10) : c.background,
+                ),
+              ),
             ),
           ),
         ),
@@ -687,18 +734,14 @@ class _BottomActions extends StatelessWidget {
                 icon: Icon(
                   Icons.bedtime_outlined,
                   size: 18,
-                  color: controller.hasSleepTimer
-                      ? c.accent
-                      : c.textTertiary,
+                  color: controller.hasSleepTimer ? c.accent : c.textTertiary,
                 ),
                 label: Text(
                   controller.hasSleepTimer
                       ? _formatRemaining(controller.sleepTimerRemaining!)
                       : 'Sleep Timer',
                   style: TextStyle(
-                    color: controller.hasSleepTimer
-                        ? c.accent
-                        : c.textTertiary,
+                    color: controller.hasSleepTimer ? c.accent : c.textTertiary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -729,12 +772,13 @@ class _BottomActions extends StatelessWidget {
   }
 
   void _showSleepTimerSheet(BuildContext context) {
-    final c = AppColorScheme.of(context);
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: c.surfaceElevated,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black38,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return _SleepTimerSheet(controller: controller);
@@ -747,7 +791,7 @@ class _BottomActions extends StatelessWidget {
 // Sleep Timer Bottom Sheet
 // ─────────────────────────────────────────────────────────────────
 
-class _SleepTimerSheet extends StatelessWidget {
+class _SleepTimerSheet extends StatefulWidget {
   const _SleepTimerSheet({required this.controller});
 
   final RadioController controller;
@@ -755,16 +799,64 @@ class _SleepTimerSheet extends StatelessWidget {
   static const _presets = <int>[5, 10, 15, 30, 45, 60, 90, 120];
 
   @override
+  State<_SleepTimerSheet> createState() => _SleepTimerSheetState();
+}
+
+class _SleepTimerSheetState extends State<_SleepTimerSheet> {
+  late final TextEditingController _customMinutesController;
+
+  int? get _customMinutes {
+    final value = int.tryParse(_customMinutesController.text.trim());
+    if (value == null || value <= 0) {
+      return null;
+    }
+    return value;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _customMinutesController = TextEditingController();
+    final total = widget.controller.sleepTimerTotal;
+    if (total != null && !_SleepTimerSheet._presets.contains(total.inMinutes)) {
+      _customMinutesController.text = total.inMinutes.toString();
+    }
+  }
+
+  @override
+  void dispose() {
+    _customMinutesController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            // Handle
-            Container(
+    final customMinutes = _customMinutes;
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [c.glassHighlight, c.glassBase, c.glassDeep],
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(
+              top: BorderSide(color: c.glassEdge, width: 0.8),
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  // Handle
+                  Container(
               width: 36,
               height: 4,
               margin: const EdgeInsets.only(bottom: 16),
@@ -796,28 +888,96 @@ class _SleepTimerSheet extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _presets.map((minutes) {
-                final isActive = controller.hasSleepTimer &&
-                    controller.sleepTimerTotal?.inMinutes == minutes;
+              children: _SleepTimerSheet._presets.map((minutes) {
+                final isActive = widget.controller.hasSleepTimer &&
+                    widget.controller.sleepTimerTotal?.inMinutes == minutes;
                 return _TimerChip(
                   label: _chipLabel(minutes),
                   isActive: isActive,
                   onTap: () {
-                    controller.startSleepTimer(Duration(minutes: minutes));
+                    widget.controller.startSleepTimer(
+                      Duration(minutes: minutes),
+                    );
                     Navigator.of(context).pop();
                   },
                 );
               }).toList(),
             ),
 
+            const SizedBox(height: 16),
+
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: TextField(
+                    controller: _customMinutesController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(4),
+                    ],
+                    onChanged: (_) => setState(() {}),
+                    style: TextStyle(
+                      color: c.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      filled: true,
+                      fillColor: c.surfaceHighlight,
+                      hintText: 'Custom time',
+                      hintStyle: TextStyle(color: c.textTertiary),
+                      suffixText: 'min',
+                      suffixStyle: TextStyle(color: c.textTertiary),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                FilledButton.icon(
+                  onPressed: customMinutes == null
+                      ? null
+                      : () {
+                          widget.controller.startSleepTimer(
+                            Duration(minutes: customMinutes),
+                          );
+                          Navigator.of(context).pop();
+                        },
+                  icon: const Icon(Icons.timer_rounded, size: 18),
+                  label: const Text('Set'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: c.accent,
+                    foregroundColor: c.background,
+                    disabledBackgroundColor: c.surfaceHighlight,
+                    disabledForegroundColor: c.textTertiary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
             // Cancel button
-            if (controller.hasSleepTimer) ...<Widget>[
+            if (widget.controller.hasSleepTimer) ...<Widget>[
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: () {
-                    controller.cancelSleepTimer();
+                    widget.controller.cancelSleepTimer();
                     Navigator.of(context).pop();
                   },
                   style: OutlinedButton.styleFrom(
@@ -835,7 +995,10 @@ class _SleepTimerSheet extends StatelessWidget {
                 ),
               ),
             ],
-          ],
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -864,20 +1027,46 @@ class _TimerChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
-    return Material(
-      color: isActive ? c.accent : c.surfaceHighlight,
+    return ClipRRect(
       borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isActive ? c.background : c.textSecondary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                gradient: isActive
+                    ? LinearGradient(
+                        colors: [
+                          c.accent.withValues(alpha: 0.85),
+                          c.accent.withValues(alpha: 0.65),
+                        ],
+                      )
+                    : LinearGradient(
+                        colors: [c.glassHighlight, c.glassBase],
+                      ),
+                border: Border.all(
+                  color: isActive
+                      ? c.accent.withValues(alpha: 0.50)
+                      : c.glassEdge,
+                  width: 0.8,
+                ),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: isActive ? Colors.white : c.textSecondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ),

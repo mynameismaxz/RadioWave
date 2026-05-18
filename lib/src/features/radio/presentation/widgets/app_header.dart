@@ -10,9 +10,14 @@ import 'glass.dart';
 import 'logo.dart';
 
 class AppHeader extends StatefulWidget {
-  const AppHeader({required this.controller, super.key});
+  const AppHeader({
+    required this.controller,
+    this.wide = false,
+    super.key,
+  });
 
   final RadioController controller;
+  final bool wide;
 
   @override
   State<AppHeader> createState() => _AppHeaderState();
@@ -41,45 +46,65 @@ class _AppHeaderState extends State<AppHeader> {
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 420;
     final c = AppColorScheme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final searchField = TextField(
+      controller: _searchController,
+      textInputAction: TextInputAction.search,
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: c.textPrimary,
+      ),
+      cursorColor: c.textPrimary,
+      decoration: glassInputDecoration(
+        context: context,
+        hintText: compact ? 'Search stations' : 'What do you want to listen to?',
+        prefixIcon: Icons.search_rounded,
+        suffixIcon: _searchController.text.isEmpty
+            ? null
+            : IconButton(
+                tooltip: 'Clear search',
+                onPressed: () => unawaited(_clearSearch()),
+                icon: Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: c.textTertiary,
+                ),
+              ),
+      ),
+      onChanged: _onSearchChanged,
+      onSubmitted: (_) => unawaited(_runSearch()),
+    );
+
+    if (widget.wide) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(32, 20, 32, 16),
+        child: Row(
+          children: <Widget>[
+            const SizedBox(width: 72),
+            Expanded(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: searchField,
+              ),
+            ),
+            const Spacer(),
+            _ThemeToggleButton(isDark: isDark),
+          ],
+        ),
+      );
+    }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Row(
         children: <Widget>[
           if (!compact) const Logo(),
-          if (!compact) const SizedBox(width: 16),
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              textInputAction: TextInputAction.search,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: c.textPrimary,
-              ),
-              cursorColor: c.textPrimary,
-              decoration: glassInputDecoration(
-                context: context,
-                hintText: compact ? 'Search...' : 'What do you want to listen to?',
-                prefixIcon: compact ? Icons.radio_rounded : Icons.search_rounded,
-                suffixIcon: _searchController.text.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: 'Clear search',
-                        onPressed: () => unawaited(_clearSearch()),
-                        icon: Icon(
-                          Icons.close_rounded,
-                          size: 18,
-                          color: c.textTertiary,
-                        ),
-                      ),
-              ),
-              onChanged: _onSearchChanged,
-              onSubmitted: (_) => unawaited(_runSearch()),
-            ),
-          ),
-          const SizedBox(width: 10),
-          _ThemeToggleButton(),
+          if (!compact) const SizedBox(width: 12),
+          Expanded(child: searchField),
+          const SizedBox(width: 8),
+          _ThemeToggleButton(isDark: isDark),
         ],
       ),
     );
@@ -116,40 +141,22 @@ class _AppHeaderState extends State<AppHeader> {
   }
 }
 
-/// Animated dark / light mode toggle button.
 class _ThemeToggleButton extends StatelessWidget {
+  const _ThemeToggleButton({required this.isDark});
+
+  final bool isDark;
+
   @override
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
-    final isDark = themeNotifier.isDark;
 
-    return SizedBox(
-      width: 40,
-      height: 40,
-      child: Material(
-        color: c.surfaceHighlight,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: themeNotifier.toggle,
-          child: Center(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (child, anim) {
-                return RotationTransition(
-                  turns: Tween<double>(begin: 0.75, end: 1.0).animate(anim),
-                  child: FadeTransition(opacity: anim, child: child),
-                );
-              },
-              child: Icon(
-                isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                key: ValueKey(isDark),
-                size: 20,
-                color: isDark ? const Color(0xFFFFC107) : const Color(0xFF5C6BC0),
-              ),
-            ),
-          ),
-        ),
+    return IconButton(
+      tooltip: isDark ? 'Light mode' : 'Dark mode',
+      onPressed: themeNotifier.toggle,
+      icon: Icon(
+        isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+        color: c.textSecondary,
+        size: 22,
       ),
     );
   }

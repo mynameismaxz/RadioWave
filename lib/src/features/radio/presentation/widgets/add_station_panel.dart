@@ -32,76 +32,84 @@ class _AddStationPanelState extends State<AddStationPanel> {
     final c = AppColorScheme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 560;
-          final nameField = TextField(
-            controller: _nameController,
-            style: TextStyle(fontSize: 14, color: c.textPrimary),
-            cursorColor: c.textPrimary,
-            decoration: glassInputDecoration(context: context, hintText: 'Station name'),
-          );
-          final urlField = TextField(
-            controller: _urlController,
-            keyboardType: TextInputType.url,
-            style: TextStyle(fontSize: 14, color: c.textPrimary),
-            cursorColor: c.textPrimary,
-            decoration: glassInputDecoration(
-              context: context,
-              hintText: 'Stream URL (e.g. https://...)',
-            ),
-          );
-          final addButton = FilledButton(
-            onPressed: () => unawaited(_addStation()),
-            style: FilledButton.styleFrom(
-              minimumSize: Size(isCompact ? 0 : 124, 46),
-              backgroundColor: c.accent,
-              foregroundColor: c.background,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: c.surfaceHighlight,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: c.border),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 560;
+            final nameField = TextField(
+              controller: _nameController,
+              style: TextStyle(fontSize: 14, color: c.textPrimary),
+              cursorColor: c.textPrimary,
+              decoration: glassInputDecoration(context: context, hintText: 'Station name'),
+            );
+            final urlField = TextField(
+              controller: _urlController,
+              keyboardType: TextInputType.url,
+              style: TextStyle(fontSize: 14, color: c.textPrimary),
+              cursorColor: c.textPrimary,
+              decoration: glassInputDecoration(
+                context: context,
+                hintText: 'Stream URL (e.g. https://...)',
               ),
-            ),
-            child: const Text(
-              'Add Station',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-          );
+            );
+            final addButton = FilledButton(
+              onPressed: () => unawaited(_addStation()),
+              style: FilledButton.styleFrom(
+                minimumSize: Size(isCompact ? double.infinity : 124, 46),
+                backgroundColor: c.textPrimary,
+                foregroundColor: c.background,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: const Text(
+                'Add Station',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            );
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              if (isCompact)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    nameField,
-                    const SizedBox(height: 8),
-                    urlField,
-                    const SizedBox(height: 10),
-                    addButton,
-                  ],
-                )
-              else
-                Row(
-                  children: <Widget>[
-                    Expanded(child: nameField),
-                    const SizedBox(width: 8),
-                    Expanded(child: urlField),
-                    const SizedBox(width: 10),
-                    addButton,
-                  ],
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                if (isCompact)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      nameField,
+                      const SizedBox(height: 8),
+                      urlField,
+                      const SizedBox(height: 10),
+                      addButton,
+                    ],
+                  )
+                else
+                  Row(
+                    children: <Widget>[
+                      Expanded(child: nameField),
+                      const SizedBox(width: 8),
+                      Expanded(child: urlField),
+                      const SizedBox(width: 10),
+                      addButton,
+                    ],
+                  ),
+                const SizedBox(height: 10),
+                Text(
+                  'Paste a direct MP3, AAC, or OGG stream URL.',
+                  style: TextStyle(
+                    color: c.textTertiary,
+                    fontSize: 12,
+                  ),
                 ),
-              const SizedBox(height: 10),
-              Text(
-                'Paste a direct MP3, AAC, or OGG stream URL.',
-                style: TextStyle(
-                  color: c.textTertiary,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }

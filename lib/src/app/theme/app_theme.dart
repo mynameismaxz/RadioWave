@@ -29,13 +29,13 @@ class AppTheme {
         space: 0,
       ),
       sliderTheme: SliderThemeData(
-        activeTrackColor: c.accent,
+        activeTrackColor: c.textPrimary,
         inactiveTrackColor: c.surfaceHighlight,
         thumbColor: c.textPrimary,
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
         trackHeight: 3,
         overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-        overlayColor: c.accent.withValues(alpha: 0.12),
+        overlayColor: Colors.white.withValues(alpha: 0.08),
       ),
       extensions: const <ThemeExtension<dynamic>>[c],
     );

@@ -47,7 +47,7 @@ class StationViewport extends StatelessWidget {
         );
       case StationViewState.list:
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(8, 0, 8, 120),
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 120),
           itemCount: controller.stations.length,
           itemBuilder: (context, index) {
             return StationCard(
@@ -104,58 +104,62 @@ class _SkeletonCardState extends State<SkeletonCard>
   @override
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        final shimmerOpacity = 0.03 + (_controller.value * 0.05);
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 1),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: <Widget>[
-              // Artwork skeleton
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: c.textPrimary.withValues(alpha: shimmerOpacity),
-                  borderRadius: BorderRadius.circular(6),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 1),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6),
+          color: c.surfaceHighlight,
+        ),
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) {
+            final shimmerOpacity = 0.04 + (_controller.value * 0.05);
+            return Row(
+              children: <Widget>[
+                // Artwork skeleton
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: c.textPrimary.withValues(alpha: shimmerOpacity),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    // Title skeleton
-                    Container(
-                      height: 14,
-                      width: 160,
-                      decoration: BoxDecoration(
-                        color: c.textPrimary.withValues(alpha: shimmerOpacity),
-                        borderRadius: BorderRadius.circular(4),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      // Title skeleton
+                      Container(
+                        height: 14,
+                        width: 160,
+                        decoration: BoxDecoration(
+                          color: c.textPrimary.withValues(alpha: shimmerOpacity),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Subtitle skeleton
-                    Container(
-                      height: 11,
-                      width: 100,
-                      decoration: BoxDecoration(
-                        color: c.textPrimary.withValues(alpha: shimmerOpacity * 0.7),
-                        borderRadius: BorderRadius.circular(4),
+                      const SizedBox(height: 8),
+                      // Subtitle skeleton
+                      Container(
+                        height: 11,
+                        width: 100,
+                        decoration: BoxDecoration(
+                          color: c.textPrimary.withValues(alpha: shimmerOpacity * 0.7),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }
@@ -180,36 +184,44 @@ class StateMessage extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(40, 60, 40, 120),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(icon, size: 56, color: c.textTertiary),
-            const SizedBox(height: 20),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.3,
-                color: c.textPrimary,
+        child: Container(
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: c.surfaceHighlight,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: c.border),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(icon, size: 56, color: c.textTertiary),
+              const SizedBox(height: 20),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.3,
+                  color: c.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: c.textTertiary,
-                fontSize: 14,
-                height: 1.5,
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: c.textTertiary,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
               ),
-            ),
-            if (action != null) ...<Widget>[
-              const SizedBox(height: 24),
-              action!,
+              if (action != null) ...<Widget>[
+                const SizedBox(height: 24),
+                action!,
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

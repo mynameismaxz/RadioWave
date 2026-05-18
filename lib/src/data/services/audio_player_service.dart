@@ -24,10 +24,12 @@ class AudioPlayerService {
     await _player
         .setAudioSource(AudioSource.uri(Uri.parse(station.url)))
         .timeout(const Duration(seconds: 10));
-    await _player.play();
+    unawaited(_player.play());
   }
 
-  Future<void> play() => _handler.play();
+  Future<void> play() async {
+    unawaited(_handler.play());
+  }
 
   Future<void> pause() => _player.pause();
 

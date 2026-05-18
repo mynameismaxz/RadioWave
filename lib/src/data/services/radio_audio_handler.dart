@@ -23,7 +23,9 @@ class RadioAudioHandler extends BaseAudioHandler {
   }
 
   @override
-  Future<void> play() => _player.play();
+  Future<void> play() async {
+    unawaited(_player.play());
+  }
 
   /// Live radio cannot resume from a pause position; treat pause as stop so any
   /// implicit pause (system audio focus loss, headset unplug, lock-screen) does
