@@ -10,6 +10,7 @@ import '../../../data/models/radio_country.dart';
 import '../../../data/models/station.dart';
 import '../../../data/services/audio_player_service.dart';
 import '../../../data/services/favorites_store.dart';
+import '../../../data/services/playback_state_store.dart';
 import '../../../data/services/radio_browser_api.dart';
 import '../domain/radio_tab.dart';
 import '../domain/station_view_state.dart';
@@ -19,8 +20,10 @@ class RadioController extends ChangeNotifier {
     RadioBrowserApi? api,
     FavoritesStore? favorites,
     AudioPlayerService? player,
+    PlaybackStateStore? playbackStateStore,
   })  : api = api ?? RadioBrowserApi(),
         favorites = favorites ?? FavoritesStore(),
+        playbackStateStore = playbackStateStore ?? PlaybackStateStore(),
         player = player ?? AudioPlayerService() {
     _playerStateSub = this.player.playerStateStream.listen(_onPlayerState);
     _playbackEventSub = this.player.playbackEventStream.listen(
@@ -33,6 +36,7 @@ class RadioController extends ChangeNotifier {
 
   final RadioBrowserApi api;
   final FavoritesStore favorites;
+  final PlaybackStateStore playbackStateStore;
   final AudioPlayerService player;
   final List<Timer> _toastTimers = <Timer>[];
 
@@ -112,12 +116,42 @@ class RadioController extends ChangeNotifier {
 
   Future<void> init() async {
     await favorites.init();
+    await playbackStateStore.init();
     favoriteUuids = favorites.getUuids().toSet();
+    _restorePlaybackState();
     await _initVolume();
     _safeNotify();
 
     unawaited(_loadCountries());
     await loadDiscover();
+  }
+
+  void _restorePlaybackState() {
+    final saved = playbackStateStore.load();
+    if (saved == null) {
+      return;
+    }
+
+    currentStation = saved.station;
+    playerBarVisible = true;
+    playerBarPaused = true;
+    playerStatus =
+        saved.wasPlaying ? 'Paused - tap play to resume' : 'Ready to play';
+  }
+
+  void _savePlaybackState({bool? wasPlaying}) {
+    final station = currentStation;
+    if (station == null) {
+      unawaited(playbackStateStore.clear());
+      return;
+    }
+
+    unawaited(
+      playbackStateStore.save(
+        station: station,
+        wasPlaying: wasPlaying ?? playerIsPlaying,
+      ),
+    );
   }
 
   Future<void> _initVolume() async {
@@ -330,6 +364,7 @@ class RadioController extends ChangeNotifier {
     playerIsLoading = true;
     playerStatus = 'Connecting...';
     _hasLoadedStation = false;
+    _savePlaybackState(wasPlaying: true);
     _safeNotify();
 
     // Safety timeout — if still loading after 12s, force stop
@@ -369,6 +404,7 @@ class RadioController extends ChangeNotifier {
     playerBarPaused = true;
     playerStatus = 'Stopped';
     _hasLoadedStation = false;
+    _savePlaybackState(wasPlaying: false);
     _safeNotify();
   }
 
@@ -388,6 +424,7 @@ class RadioController extends ChangeNotifier {
       _cancelAutoReconnect();
       _userRequestedPlayback = false;
       await player.pause();
+      _savePlaybackState(wasPlaying: false);
       return;
     }
 
@@ -472,6 +509,7 @@ class RadioController extends ChangeNotifier {
     playerBarPaused = true;
     playerStatus = 'Stopped';
     _hasLoadedStation = false;
+    _savePlaybackState(wasPlaying: false);
     _safeNotify();
     showToast('Sleep timer ended — playback stopped', ToastType.info);
   }
@@ -630,6 +668,7 @@ class RadioController extends ChangeNotifier {
       _reconnectAttempts = 0;
       playerStatus = 'Now Playing';
       playerBarPaused = false;
+      _savePlaybackState(wasPlaying: true);
     } else if (stoppedUnexpectedly) {
       playerIsPlaying = false;
       playerIsLoading = true;
@@ -640,9 +679,11 @@ class RadioController extends ChangeNotifier {
       playerIsPlaying = false;
       playerBarPaused = true;
       playerStatus = 'Paused';
+      _savePlaybackState(wasPlaying: false);
     } else if (!state.playing && hasStation) {
       playerBarPaused = true;
       playerStatus = 'Paused';
+      _savePlaybackState(wasPlaying: false);
     }
 
     _safeNotify();
@@ -657,6 +698,7 @@ class RadioController extends ChangeNotifier {
     playerBarPaused = true;
     playerStatus = 'Paused';
     _hasLoadedStation = false;
+    _savePlaybackState(wasPlaying: false);
     _safeNotify();
   }
 
@@ -692,6 +734,7 @@ class RadioController extends ChangeNotifier {
       playerBarPaused = true;
       playerStatus = 'Paused';
       _hasLoadedStation = false;
+      _savePlaybackState(wasPlaying: false);
       showToast('Stream stopped. Tap play to retry.', ToastType.error);
       return;
     }

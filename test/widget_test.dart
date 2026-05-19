@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:radio_app_flutter/src/app/theme/theme_notifier.dart';
 import 'package:radio_app_flutter/src/data/models/station.dart';
+import 'package:radio_app_flutter/src/data/services/playback_state_store.dart';
 import 'package:radio_app_flutter/src/features/radio/domain/radio_tab.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,6 +36,22 @@ void main() {
     });
 
     expect(brokenStation.lastCheckOk, isFalse);
+  });
+
+  test('persists the last playback station state', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = PlaybackStateStore();
+    await store.init();
+
+    final station = Station.custom('Saved FM', 'https://example.com/saved.mp3');
+    await store.save(station: station, wasPlaying: true);
+
+    final restored = store.load();
+
+    expect(restored, isNotNull);
+    expect(restored!.station.name, 'Saved FM');
+    expect(restored.station.url, 'https://example.com/saved.mp3');
+    expect(restored.wasPlaying, isTrue);
   });
 
   test('radio tabs expose user-facing labels', () {
