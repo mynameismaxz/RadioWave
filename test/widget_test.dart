@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:radio_app_flutter/src/app/theme/theme_notifier.dart';
 import 'package:radio_app_flutter/src/data/models/station.dart';
+import 'package:radio_app_flutter/src/data/services/equalizer_settings_store.dart';
 import 'package:radio_app_flutter/src/data/services/playback_state_store.dart';
 import 'package:radio_app_flutter/src/features/radio/domain/radio_tab.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -54,9 +55,29 @@ void main() {
     expect(restored.wasPlaying, isTrue);
   });
 
+  test('persists equalizer settings', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = EqualizerSettingsStore();
+    await store.init();
+
+    await store.save(
+      enabled: true,
+      preset: 'Rock',
+      gains: <double>[3, 2, -1, -1, 1, 4],
+    );
+
+    final restored = store.load();
+
+    expect(restored, isNotNull);
+    expect(restored!.enabled, isTrue);
+    expect(restored.preset, 'Rock');
+    expect(restored.gains, <double>[3, 2, -1, -1, 1, 4]);
+  });
+
   test('radio tabs expose user-facing labels', () {
     expect(RadioTab.discover.label, 'Discover');
     expect(RadioTab.favorites.label, 'Favorites');
+    expect(RadioTab.equalizer.label, 'Equalizer');
     expect(RadioTab.add.label, 'Add Station');
   });
 
