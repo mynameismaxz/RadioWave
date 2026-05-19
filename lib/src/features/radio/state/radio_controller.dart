@@ -67,6 +67,7 @@ class RadioController extends ChangeNotifier {
   Timer? _bufferingReconnectTimer;
   bool _userRequestedPlayback = false;
   bool _isStartingPlayback = false;
+  String? _lastEqualizerApplyStationKey;
   int _reconnectAttempts = 0;
   static const int _maxReconnectAttempts = 3;
   static const Duration _bufferingReconnectDelay = Duration(seconds: 15);
@@ -434,6 +435,7 @@ class RadioController extends ChangeNotifier {
     _userRequestedPlayback = true;
     _reconnectAttempts = 0;
     currentStation = station;
+    _lastEqualizerApplyStationKey = null;
     playerBarVisible = true;
     playerBarPaused = false;
     playerIsLoading = true;
@@ -795,7 +797,9 @@ class RadioController extends ChangeNotifier {
       playerStatus = 'Now Playing';
       playerBarPaused = false;
       _savePlaybackState(wasPlaying: true);
-      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      final stationKey = _equalizerStationKey();
+      if (equalizerEnabled && _lastEqualizerApplyStationKey != stationKey) {
+        _lastEqualizerApplyStationKey = stationKey;
         unawaited(_applyEqualizer());
       }
     } else if (stoppedUnexpectedly) {
@@ -816,6 +820,15 @@ class RadioController extends ChangeNotifier {
     }
 
     _safeNotify();
+  }
+
+  String? _equalizerStationKey() {
+    final station = currentStation;
+    if (station == null) {
+      return null;
+    }
+
+    return station.uuid.isNotEmpty ? station.uuid : station.url;
   }
 
   void _showPlaybackError(String message) {

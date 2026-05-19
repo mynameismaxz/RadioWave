@@ -40,7 +40,9 @@ class AudioPlayerService {
         .setAudioSource(AudioSource.uri(Uri.parse(station.url)))
         .timeout(const Duration(seconds: 10));
     unawaited(_player.play());
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    if (kIsWeb) {
+      unawaited(_applyWebEqualizerAfterPlaybackStarts());
+    } else if (defaultTargetPlatform == TargetPlatform.android) {
       unawaited(_applyAndroidEqualizerWhenReady());
     }
   }
@@ -102,6 +104,17 @@ class AudioPlayerService {
         await _applyEqualizerBands();
         return;
       }
+    }
+  }
+
+  Future<void> _applyWebEqualizerAfterPlaybackStarts() async {
+    if (!_equalizerEnabled) {
+      return;
+    }
+
+    for (var attempt = 0; attempt < 4; attempt += 1) {
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      await _applyEqualizerBands();
     }
   }
 
