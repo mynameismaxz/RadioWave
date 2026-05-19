@@ -15,7 +15,7 @@ class TabNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final iconOnly = constraints.maxWidth < 360;
+        final iconOnly = constraints.maxWidth < 520;
         final outerPadding = constraints.maxWidth < 420 ? 10.0 : 16.0;
         final itemGap = constraints.maxWidth < 420 ? 2.0 : 4.0;
 

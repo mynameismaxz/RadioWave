@@ -27,6 +27,197 @@
   </style>
 </head>
 <body>
+  <script>
+    (function () {
+      const frequencies = [60, 150, 400, 1000, 2400, 15000];
+      const state = {
+        context: null,
+        source: null,
+        filters: [],
+        audio: null,
+        enabled: false,
+        gains: [0, 0, 0, 0, 0, 0]
+      };
+
+      const originalCreateElement = Document.prototype.createElement;
+      Document.prototype.createElement = function (tagName, options) {
+        const element = originalCreateElement.call(this, tagName, options);
+        if (String(tagName).toLowerCase() === 'audio') {
+          primeAudioElement(element);
+        }
+        return element;
+      };
+
+      function clampGain(value) {
+        const numberValue = Number(value);
+        if (!Number.isFinite(numberValue)) {
+          return 0;
+        }
+        return Math.min(12, Math.max(-12, numberValue));
+      }
+
+      function audibleGain(value) {
+        const gain = clampGain(value);
+        if (Math.abs(gain) < 0.1) {
+          return 0;
+        }
+        return Math.min(18, Math.max(-18, gain * 1.45));
+      }
+
+      function latestAudioElement() {
+        const audioElements = Array.from(document.querySelectorAll('audio'));
+        if (audioElements.length > 0) {
+          return audioElements[audioElements.length - 1];
+        }
+
+        if (state.audio && state.audio.tagName && state.audio.tagName.toLowerCase() === 'audio') {
+          return state.audio;
+        }
+
+        return null;
+      }
+
+      function primeAudioElement(audio) {
+        if (!audio || audio.dataset.radioWaveEqualizerPrimed === 'true') {
+          return;
+        }
+        audio.crossOrigin = 'anonymous';
+        audio.dataset.radioWaveEqualizerPrimed = 'true';
+      }
+
+      function primeExistingAudioElements() {
+        document.querySelectorAll('audio').forEach(primeAudioElement);
+      }
+
+      function buildPipeline(audio) {
+        if (!audio) {
+          return false;
+        }
+
+        if (!state.context) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) {
+            return false;
+          }
+          state.context = new AudioContextClass();
+        }
+
+        if (state.audio === audio && state.filters.length === frequencies.length) {
+          return true;
+        }
+
+        primeAudioElement(audio);
+        state.audio = audio;
+        state.source = state.context.createMediaElementSource(audio);
+        state.filters = frequencies.map(function (frequency, index) {
+          const filter = state.context.createBiquadFilter();
+          if (index === 0) {
+            filter.type = 'lowshelf';
+          } else if (index === frequencies.length - 1) {
+            filter.type = 'highshelf';
+          } else {
+            filter.type = 'peaking';
+          }
+          filter.frequency.value = frequency;
+          filter.Q.value = index === 0 || index === frequencies.length - 1 ? 0.95 : 1.35;
+          filter.gain.value = 0;
+          return filter;
+        });
+
+        let previous = state.source;
+        state.filters.forEach(function (filter) {
+          previous.connect(filter);
+          previous = filter;
+        });
+        previous.connect(state.context.destination);
+        return true;
+      }
+
+      function writeGains() {
+        if (!state.context) {
+          return;
+        }
+
+        state.filters.forEach(function (filter, index) {
+          filter.gain.setTargetAtTime(
+            state.enabled ? audibleGain(state.gains[index]) : 0,
+            state.context.currentTime,
+            0.01
+          );
+        });
+      }
+
+      window.radioWaveEqualizer = {
+        apply: function (enabled, gains) {
+          state.enabled = Boolean(enabled);
+          state.gains = Array.from(gains || []).slice(0, frequencies.length).map(clampGain);
+          while (state.gains.length < frequencies.length) {
+            state.gains.push(0);
+          }
+
+          if (!state.enabled) {
+            if (state.filters.length > 0) {
+              writeGains();
+            }
+            return;
+          }
+
+          const audio = latestAudioElement();
+          if (!audio) {
+            return;
+          }
+
+          try {
+            if (!buildPipeline(audio)) {
+              return;
+            }
+            if (state.context.state === 'suspended') {
+              state.context.resume().catch(function () {});
+            }
+            writeGains();
+          } catch (error) {
+            console.warn('RadioWave equalizer could not attach to this stream.', error);
+          }
+        },
+        debug: function () {
+          return {
+            enabled: state.enabled,
+            attached: Boolean(state.audio),
+            filters: state.filters.length,
+            audioElements: document.querySelectorAll('audio').length
+          };
+        }
+      };
+
+      const originalPlay = HTMLMediaElement.prototype.play;
+      HTMLMediaElement.prototype.play = function () {
+        if (this.tagName && this.tagName.toLowerCase() === 'audio') {
+          primeAudioElement(this);
+          state.audio = this;
+          if (state.enabled) {
+            try {
+              buildPipeline(this);
+              if (state.context && state.context.state === 'suspended') {
+                state.context.resume().catch(function () {});
+              }
+              writeGains();
+            } catch (error) {
+              console.warn('RadioWave equalizer could not attach before playback.', error);
+            }
+          }
+        }
+        return originalPlay.apply(this, arguments);
+      };
+
+      const observer = new MutationObserver(primeExistingAudioElements);
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+      document.addEventListener('play', function () {
+        if (state.enabled) {
+          window.radioWaveEqualizer.apply(state.enabled, state.gains);
+        }
+      }, true);
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -1,16 +1,23 @@
 import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../models/station.dart';
+import 'android_equalizer_adapter_stub.dart'
+    if (dart.library.io) 'android_equalizer_adapter.dart';
 import 'radio_audio_handler.dart';
+import 'web_equalizer_adapter_stub.dart'
+    if (dart.library.html) 'web_equalizer_adapter_web.dart';
 
 class AudioPlayerService {
   AudioPlayerService({RadioAudioHandler? handler})
       : _handler = handler ?? radioAudioHandler;
 
   final RadioAudioHandler _handler;
+  bool _equalizerEnabled = false;
+  List<double> _equalizerGains = const <double>[];
 
   AudioPlayer get _player => _handler.player;
 
@@ -18,16 +25,28 @@ class AudioPlayerService {
 
   Stream<PlaybackEvent> get playbackEventStream => _player.playbackEventStream;
 
+  Stream<int?> get androidAudioSessionIdStream =>
+      _player.androidAudioSessionIdStream;
+
   Future<void> playStation(Station station) async {
     await _player.stop();
     await _handler.setMediaItem(_mediaItemFor(station));
+    if (kIsWeb) {
+      await _player.setWebCrossOrigin(
+        _equalizerEnabled ? WebCrossOrigin.anonymous : null,
+      );
+    }
     await _player
         .setAudioSource(AudioSource.uri(Uri.parse(station.url)))
         .timeout(const Duration(seconds: 10));
     unawaited(_player.play());
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      unawaited(_applyAndroidEqualizerWhenReady());
+    }
   }
 
   Future<void> play() async {
+    await _applyEqualizerBands();
     unawaited(_handler.play());
   }
 
@@ -36,6 +55,55 @@ class AudioPlayerService {
   Future<void> stop() => _handler.stop();
 
   Future<void> setVolume(double value) => _player.setVolume(value);
+
+  Future<void> setEqualizer({
+    required bool enabled,
+    required List<double> gains,
+  }) async {
+    _equalizerEnabled = enabled;
+    _equalizerGains = List<double>.of(gains);
+
+    if (kIsWeb) {
+      await setWebEqualizer(enabled: enabled, gains: gains);
+      return;
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await setAndroidEqualizer(
+        enabled: enabled,
+        audioSessionId: _player.androidAudioSessionId,
+        gains: gains,
+      );
+    }
+  }
+
+  Future<void> _applyEqualizerBands() async {
+    if (kIsWeb) {
+      await setWebEqualizer(
+        enabled: _equalizerEnabled,
+        gains: _equalizerGains,
+      );
+      return;
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await setAndroidEqualizer(
+        enabled: _equalizerEnabled,
+        audioSessionId: _player.androidAudioSessionId,
+        gains: _equalizerGains,
+      );
+    }
+  }
+
+  Future<void> _applyAndroidEqualizerWhenReady() async {
+    for (var attempt = 0; attempt < 5; attempt += 1) {
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      if (_player.androidAudioSessionId != null) {
+        await _applyEqualizerBands();
+        return;
+      }
+    }
+  }
 
   Future<void> dispose() => _handler.dispose();
 

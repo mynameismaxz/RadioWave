@@ -9,6 +9,7 @@ import '../../../data/models/app_toast.dart';
 import '../../../data/models/radio_country.dart';
 import '../../../data/models/station.dart';
 import '../../../data/services/audio_player_service.dart';
+import '../../../data/services/equalizer_settings_store.dart';
 import '../../../data/services/favorites_store.dart';
 import '../../../data/services/playback_state_store.dart';
 import '../../../data/services/radio_browser_api.dart';
@@ -21,9 +22,12 @@ class RadioController extends ChangeNotifier {
     FavoritesStore? favorites,
     AudioPlayerService? player,
     PlaybackStateStore? playbackStateStore,
+    EqualizerSettingsStore? equalizerSettingsStore,
   })  : api = api ?? RadioBrowserApi(),
         favorites = favorites ?? FavoritesStore(),
         playbackStateStore = playbackStateStore ?? PlaybackStateStore(),
+        equalizerSettingsStore =
+            equalizerSettingsStore ?? EqualizerSettingsStore(),
         player = player ?? AudioPlayerService() {
     _playerStateSub = this.player.playerStateStream.listen(_onPlayerState);
     _playbackEventSub = this.player.playbackEventStream.listen(
@@ -32,16 +36,25 @@ class RadioController extends ChangeNotifier {
         _handlePlaybackError();
       },
     );
+    _androidAudioSessionSub = this.player.androidAudioSessionIdStream.listen(
+      (_) {
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+          unawaited(_applyEqualizer());
+        }
+      },
+    );
   }
 
   final RadioBrowserApi api;
   final FavoritesStore favorites;
   final PlaybackStateStore playbackStateStore;
+  final EqualizerSettingsStore equalizerSettingsStore;
   final AudioPlayerService player;
   final List<Timer> _toastTimers = <Timer>[];
 
   StreamSubscription<PlayerState>? _playerStateSub;
   StreamSubscription<PlaybackEvent>? _playbackEventSub;
+  StreamSubscription<int?>? _androidAudioSessionSub;
   bool _hasLoadedStation = false;
   bool _disposed = false;
   int _toastId = 0;
@@ -92,6 +105,30 @@ class RadioController extends ChangeNotifier {
 
   bool get _useSystemVolume => !kIsWeb;
 
+  static const List<String> equalizerBands = <String>[
+    '60Hz',
+    '150Hz',
+    '400Hz',
+    '1KHz',
+    '2.4KHz',
+    '15KHz',
+  ];
+
+  static const Map<String, List<double>> equalizerPresets =
+      <String, List<double>>{
+    'Flat': <double>[0, 0, 0, 0, 0, 0],
+    'Rock': <double>[8.5, 5.5, -2.8, -4.0, 3.2, 8.0],
+    'Pop': <double>[5.0, 7.0, 3.0, -2.0, 4.8, 6.6],
+    'Jazz': <double>[6.0, 3.2, -2.6, -1.4, 5.2, 7.0],
+    'Classical': <double>[5.8, 2.8, 0.0, 1.8, 4.2, 7.4],
+    'Bass Boost': <double>[12.0, 9.5, 4.0, -2.0, -4.0, -6.0],
+    'Vocal': <double>[-6.0, -4.0, 7.0, 10.0, 6.0, -2.5],
+  };
+
+  bool equalizerEnabled = false;
+  String equalizerPreset = 'Flat';
+  List<double> equalizerGains = List<double>.of(equalizerPresets['Flat']!);
+
   Set<String> favoriteUuids = <String>{};
   List<AppToast> toasts = <AppToast>[];
 
@@ -117,9 +154,14 @@ class RadioController extends ChangeNotifier {
   Future<void> init() async {
     await favorites.init();
     await playbackStateStore.init();
+    await equalizerSettingsStore.init();
     favoriteUuids = favorites.getUuids().toSet();
     _restorePlaybackState();
+    _restoreEqualizerSettings();
     await _initVolume();
+    if (!kIsWeb) {
+      await _applyEqualizer();
+    }
     _safeNotify();
 
     unawaited(_loadCountries());
@@ -152,6 +194,39 @@ class RadioController extends ChangeNotifier {
         wasPlaying: wasPlaying ?? playerIsPlaying,
       ),
     );
+  }
+
+  void _restoreEqualizerSettings() {
+    final saved = equalizerSettingsStore.load();
+    if (saved == null || saved.gains.length != equalizerBands.length) {
+      return;
+    }
+
+    equalizerEnabled = saved.enabled;
+    equalizerPreset =
+        equalizerPresets.containsKey(saved.preset) ? saved.preset : 'Custom';
+    equalizerGains = List<double>.of(saved.gains);
+  }
+
+  void _saveEqualizerSettings() {
+    unawaited(
+      equalizerSettingsStore.save(
+        enabled: equalizerEnabled,
+        preset: equalizerPreset,
+        gains: equalizerGains,
+      ),
+    );
+  }
+
+  Future<void> _applyEqualizer() async {
+    try {
+      await player.setEqualizer(
+        enabled: equalizerEnabled,
+        gains: equalizerGains,
+      );
+    } catch (_) {
+      // Equalizer effects are platform-specific; UI settings still persist.
+    }
   }
 
   Future<void> _initVolume() async {
@@ -550,6 +625,14 @@ class RadioController extends ChangeNotifier {
         stationCount = 0;
         await loadFavorites();
         break;
+      case RadioTab.equalizer:
+        searchQuery = '';
+        stationCount = 0;
+        _loadedDiscoverKey = null;
+        stations = <Station>[];
+        viewState = StationViewState.empty;
+        _safeNotify();
+        break;
       case RadioTab.add:
         searchQuery = '';
         stationCount = 0;
@@ -606,6 +689,49 @@ class RadioController extends ChangeNotifier {
 
     _safeNotify();
   }
+
+  Future<void> setEqualizerEnabled(bool enabled) async {
+    equalizerEnabled = enabled;
+    _saveEqualizerSettings();
+    _safeNotify();
+    await _applyEqualizer();
+    final station = currentStation;
+    if (kIsWeb && enabled && station != null && playerIsPlaying) {
+      await playStation(station);
+    }
+  }
+
+  Future<void> setEqualizerPreset(String preset) async {
+    final gains = equalizerPresets[preset];
+    if (gains == null) {
+      return;
+    }
+
+    equalizerPreset = preset;
+    equalizerGains = List<double>.of(gains);
+    equalizerEnabled = true;
+    _saveEqualizerSettings();
+    _safeNotify();
+    await _applyEqualizer();
+  }
+
+  Future<void> setEqualizerBand(int index, double gain) async {
+    if (index < 0 || index >= equalizerGains.length) {
+      return;
+    }
+
+    equalizerGains = <double>[
+      for (var i = 0; i < equalizerGains.length; i += 1)
+        i == index ? gain.clamp(-12.0, 12.0).toDouble() : equalizerGains[i],
+    ];
+    equalizerPreset = 'Custom';
+    equalizerEnabled = true;
+    _saveEqualizerSettings();
+    _safeNotify();
+    await _applyEqualizer();
+  }
+
+  Future<void> resetEqualizer() => setEqualizerPreset('Flat');
 
   Future<void> addCustomStation(String name, String url) async {
     final station = Station.custom(name, url);
@@ -669,6 +795,9 @@ class RadioController extends ChangeNotifier {
       playerStatus = 'Now Playing';
       playerBarPaused = false;
       _savePlaybackState(wasPlaying: true);
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        unawaited(_applyEqualizer());
+      }
     } else if (stoppedUnexpectedly) {
       playerIsPlaying = false;
       playerIsLoading = true;
@@ -855,6 +984,7 @@ class RadioController extends ChangeNotifier {
     }
     _playerStateSub?.cancel();
     _playbackEventSub?.cancel();
+    _androidAudioSessionSub?.cancel();
     if (_systemVolumeListenerActive) {
       FlutterVolumeController.removeListener();
       _systemVolumeListenerActive = false;

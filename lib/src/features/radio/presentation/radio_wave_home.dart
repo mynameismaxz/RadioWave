@@ -8,6 +8,7 @@ import '../state/radio_controller.dart';
 import 'widgets/add_station_panel.dart';
 import 'widgets/app_header.dart';
 import 'widgets/country_filter.dart';
+import 'widgets/equalizer_panel.dart';
 import 'widgets/player_bar.dart';
 import 'widgets/sidebar_nav.dart';
 import 'widgets/station_viewport.dart';
@@ -126,7 +127,11 @@ class _MainColumn extends StatelessWidget {
         if (showTabNav) TabNav(controller: controller),
         if (controller.currentTab == RadioTab.add)
           AddStationPanel(controller: controller),
-        Expanded(child: StationViewport(controller: controller)),
+        Expanded(
+          child: controller.currentTab == RadioTab.equalizer
+              ? EqualizerPanel(controller: controller)
+              : StationViewport(controller: controller),
+        ),
       ],
     );
   }
