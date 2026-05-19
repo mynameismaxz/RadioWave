@@ -16,19 +16,23 @@ class CountryFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
+    final width = MediaQuery.sizeOf(context).width;
+    final tight = width < 420;
     final selectedCountry = _selectedCountryLabel();
     final countriesReady = controller.countriesReady;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: EdgeInsets.fromLTRB(tight ? 10 : 16, 0, tight ? 10 : 16, 8),
       child: Row(
         children: <Widget>[
-          Icon(
-            Icons.public_rounded,
-            size: 18,
-            color: c.textTertiary,
-          ),
-          const SizedBox(width: 8),
+          if (!tight) ...<Widget>[
+            Icon(
+              Icons.public_rounded,
+              size: 18,
+              color: c.textTertiary,
+            ),
+            const SizedBox(width: 8),
+          ],
           Expanded(
             child: Material(
               color: Colors.transparent,
@@ -43,9 +47,7 @@ class CountryFilter extends StatelessWidget {
                     suffixIcon: Icon(
                       Icons.expand_more_rounded,
                       size: 20,
-                      color: countriesReady
-                          ? c.textSecondary
-                          : c.textDisabled,
+                      color: countriesReady ? c.textSecondary : c.textDisabled,
                     ),
                   ),
                   child: Text(
@@ -53,9 +55,7 @@ class CountryFilter extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: countriesReady
-                          ? c.textPrimary
-                          : c.textDisabled,
+                      color: countriesReady ? c.textPrimary : c.textDisabled,
                       fontSize: 13,
                     ),
                   ),
@@ -63,24 +63,26 @@ class CountryFilter extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 78,
-            child: Text(
-              controller.stationCount > 0
-                  ? '${controller.stationCount} stations'
-                  : '',
-              textAlign: TextAlign.end,
-              maxLines: 1,
-              overflow: TextOverflow.fade,
-              softWrap: false,
-              style: TextStyle(
-                color: c.textTertiary,
-                fontSize: 11,
-                letterSpacing: 0,
+          if (!tight) ...<Widget>[
+            const SizedBox(width: 10),
+            SizedBox(
+              width: 78,
+              child: Text(
+                controller.stationCount > 0
+                    ? '${controller.stationCount} stations'
+                    : '',
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.fade,
+                softWrap: false,
+                style: TextStyle(
+                  color: c.textTertiary,
+                  fontSize: 11,
+                  letterSpacing: 0,
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -174,123 +176,123 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
         border: Border(top: BorderSide(color: c.border)),
       ),
       child: SafeArea(
-            child: Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 8,
-                bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
-              ),
-              child: SizedBox(
-                height: MediaQuery.sizeOf(context).height * 0.72,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 8,
+            bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+          ),
+          child: SizedBox(
+            height: MediaQuery.sizeOf(context).height * 0.72,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.30)
+                          : Colors.black.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
                   children: <Widget>[
-                    Center(
-                      child: Container(
-                        width: 36,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.30)
-                              : Colors.black.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(2),
+                    Expanded(
+                      child: Text(
+                        'Select Country',
+                        style: TextStyle(
+                          color: c.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0,
                         ),
                       ),
                     ),
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            'Select Country',
-                            style: TextStyle(
-                              color: c.textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: 'Close',
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.close_rounded),
-                        ),
-                      ],
+                    IconButton(
+                      tooltip: 'Close',
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close_rounded),
                     ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _searchController,
-                autofocus: true,
-                textInputAction: TextInputAction.search,
-                style: TextStyle(
-                  color: c.textPrimary,
-                  fontSize: 14,
-                ),
-                cursorColor: c.textPrimary,
-                decoration: glassInputDecoration(
-                  context: context,
-                  hintText: 'Search country',
-                  prefixIcon: Icons.search_rounded,
-                  suffixIcon: _searchController.text.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: 'Clear search',
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() {});
-                          },
-                          icon: const Icon(Icons.close_rounded, size: 18),
-                        ),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 12),
-              _CountryOptionTile(
-                title: 'All Countries',
-                subtitle: '${widget.countries.length} countries',
-                selected: widget.selectedCountry.isEmpty,
-                onTap: () => Navigator.of(context).pop(''),
-              ),
-              const SizedBox(height: 6),
-              Expanded(
-                child: filteredCountries.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No countries found',
-                          style: TextStyle(
-                            color: c.textTertiary,
-                            fontSize: 13,
-                          ),
-                        ),
-                      )
-                    : ListView.separated(
-                        keyboardDismissBehavior:
-                            ScrollViewKeyboardDismissBehavior.onDrag,
-                        itemCount: filteredCountries.length,
-                        separatorBuilder: (_, __) => Divider(
-                          color: c.divider,
-                          height: 1,
-                        ),
-                        itemBuilder: (context, index) {
-                          final country = filteredCountries[index];
-
-                          return _CountryOptionTile(
-                            title: country.name,
-                            subtitle:
-                                '${country.code} - ${country.stationCount} stations',
-                            selected: country.code == widget.selectedCountry,
-                            onTap: () =>
-                                Navigator.of(context).pop(country.code),
-                          );
-                        },
-                      ),
-              ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  textInputAction: TextInputAction.search,
+                  style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 14,
+                  ),
+                  cursorColor: c.textPrimary,
+                  decoration: glassInputDecoration(
+                    context: context,
+                    hintText: 'Search country',
+                    prefixIcon: Icons.search_rounded,
+                    suffixIcon: _searchController.text.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: 'Clear search',
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {});
+                            },
+                            icon: const Icon(Icons.close_rounded, size: 18),
+                          ),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 12),
+                _CountryOptionTile(
+                  title: 'All Countries',
+                  subtitle: '${widget.countries.length} countries',
+                  selected: widget.selectedCountry.isEmpty,
+                  onTap: () => Navigator.of(context).pop(''),
+                ),
+                const SizedBox(height: 6),
+                Expanded(
+                  child: filteredCountries.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No countries found',
+                            style: TextStyle(
+                              color: c.textTertiary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          itemCount: filteredCountries.length,
+                          separatorBuilder: (_, __) => Divider(
+                            color: c.divider,
+                            height: 1,
+                          ),
+                          itemBuilder: (context, index) {
+                            final country = filteredCountries[index];
+
+                            return _CountryOptionTile(
+                              title: country.name,
+                              subtitle:
+                                  '${country.code} - ${country.stationCount} stations',
+                              selected: country.code == widget.selectedCountry,
+                              onTap: () =>
+                                  Navigator.of(context).pop(country.code),
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
+          ),
+        ),
       ),
     );
   }

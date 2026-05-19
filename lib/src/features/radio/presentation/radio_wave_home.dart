@@ -62,7 +62,7 @@ class _RadioWaveHomeState extends State<RadioWaveHome>
                 bottom: false,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final wide = constraints.maxWidth >= 900;
+                    final wide = constraints.maxWidth >= 1024;
 
                     if (wide) {
                       return Row(

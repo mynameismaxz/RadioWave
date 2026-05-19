@@ -19,13 +19,14 @@ class StationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
-    final isPlaying =
-        controller.playerIsPlaying && controller.currentStation?.uuid == station.uuid;
+    final tight = MediaQuery.sizeOf(context).width < 420;
+    final isPlaying = controller.playerIsPlaying &&
+        controller.currentStation?.uuid == station.uuid;
     final isCurrent = controller.currentStation?.uuid == station.uuid;
     final isFavorite = controller.isFavorite(station.uuid);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      padding: EdgeInsets.symmetric(horizontal: tight ? 6 : 12, vertical: 2),
       child: Material(
         color: isCurrent ? c.cardHover : Colors.transparent,
         borderRadius: BorderRadius.circular(6),
@@ -33,11 +34,18 @@ class StationCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
           onTap: () => unawaited(controller.playStation(station)),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: EdgeInsets.symmetric(
+              horizontal: tight ? 6 : 8,
+              vertical: tight ? 7 : 8,
+            ),
             child: Row(
               children: <Widget>[
-                StationArtwork(url: station.favicon, isPlaying: isPlaying),
-                const SizedBox(width: 14),
+                StationArtwork(
+                  url: station.favicon,
+                  isPlaying: isPlaying,
+                  size: tight ? 42 : 48,
+                ),
+                SizedBox(width: tight ? 10 : 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,9 +71,8 @@ class StationCard extends StatelessWidget {
                     child: PlayingBars(),
                   ),
                 IconButton(
-                  tooltip: isFavorite
-                      ? 'Remove from favorites'
-                      : 'Add to favorites',
+                  tooltip:
+                      isFavorite ? 'Remove from favorites' : 'Add to favorites',
                   onPressed: () =>
                       unawaited(controller.toggleFavoriteStation(station)),
                   visualDensity: VisualDensity.compact,
@@ -90,11 +97,13 @@ class StationArtwork extends StatelessWidget {
   const StationArtwork({
     required this.url,
     this.isPlaying = false,
+    this.size = 48,
     super.key,
   });
 
   final String url;
   final bool isPlaying;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
@@ -103,8 +112,8 @@ class StationArtwork extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: Container(
-        width: 48,
-        height: 48,
+        width: size,
+        height: size,
         color: c.card,
         child: url.isEmpty
             ? Icon(Icons.radio_rounded, color: c.textTertiary, size: 22)

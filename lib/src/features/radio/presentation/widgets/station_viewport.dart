@@ -15,9 +15,24 @@ class StationViewport extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
+    final width = MediaQuery.sizeOf(context).width;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    final bottomInset = width < 420
+        ? 96.0 + safeBottom
+        : width < 720
+            ? 108.0 + safeBottom
+            : 120.0 + safeBottom;
+    final horizontalInset = width < 420
+        ? 0.0
+        : width < 720
+            ? 4.0
+            : 8.0;
     switch (controller.viewState) {
       case StationViewState.loading:
-        return const LoadingStationList();
+        return LoadingStationList(
+          bottomInset: bottomInset,
+          horizontalInset: horizontalInset,
+        );
       case StationViewState.empty:
         return StateMessage(
           icon: Icons.radio_rounded,
@@ -47,7 +62,12 @@ class StationViewport extends StatelessWidget {
         );
       case StationViewState.list:
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(4, 0, 4, 120),
+          padding: EdgeInsets.fromLTRB(
+            horizontalInset,
+            0,
+            horizontalInset,
+            bottomInset,
+          ),
           itemCount: controller.stations.length,
           itemBuilder: (context, index) {
             return StationCard(
@@ -61,12 +81,24 @@ class StationViewport extends StatelessWidget {
 }
 
 class LoadingStationList extends StatelessWidget {
-  const LoadingStationList({super.key});
+  const LoadingStationList({
+    required this.bottomInset,
+    required this.horizontalInset,
+    super.key,
+  });
+
+  final double bottomInset;
+  final double horizontalInset;
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(8, 0, 8, 120),
+      padding: EdgeInsets.fromLTRB(
+        horizontalInset,
+        0,
+        horizontalInset,
+        bottomInset,
+      ),
       itemCount: 8,
       itemBuilder: (context, index) {
         return const SkeletonCard();
@@ -138,7 +170,8 @@ class _SkeletonCardState extends State<SkeletonCard>
                         height: 14,
                         width: 160,
                         decoration: BoxDecoration(
-                          color: c.textPrimary.withValues(alpha: shimmerOpacity),
+                          color:
+                              c.textPrimary.withValues(alpha: shimmerOpacity),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -148,7 +181,8 @@ class _SkeletonCardState extends State<SkeletonCard>
                         height: 11,
                         width: 100,
                         decoration: BoxDecoration(
-                          color: c.textPrimary.withValues(alpha: shimmerOpacity * 0.7),
+                          color: c.textPrimary
+                              .withValues(alpha: shimmerOpacity * 0.7),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),

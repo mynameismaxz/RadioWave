@@ -16,6 +16,15 @@ class PlayerBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final narrow = screenWidth < 420;
+    final barHeight = screenWidth < 420
+        ? 72.0
+        : screenWidth < 720
+            ? 80.0
+            : 88.0;
+    final horizontalPadding = narrow ? 8.0 : 14.0;
+    final verticalPadding = narrow ? 5.0 : 6.0;
     final station = controller.currentStation;
     final currentIsFavorite =
         station != null && controller.isFavorite(station.uuid);
@@ -33,9 +42,11 @@ class PlayerBar extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                height: 88,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                height: barHeight,
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: verticalPadding,
+                ),
                 decoration: BoxDecoration(
                   color: c.surfaceHighlight.withValues(
                     alpha: isDark ? 0.82 : 0.88,
@@ -98,7 +109,7 @@ class _ExpandedPlayerBar extends StatelessWidget {
               _PlayerArtwork(
                 isPlaying: controller.playerIsPlaying,
                 url: stationFavicon,
-                size: 52,
+                size: 50,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -126,15 +137,18 @@ class _ExpandedPlayerBar extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(
-          width: 360,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              _TransportControls(controller: controller, large: true),
-              const SizedBox(height: 6),
-              const _LiveRail(),
-            ],
+        Flexible(
+          flex: 0,
+          child: SizedBox(
+            width: MediaQuery.sizeOf(context).width.clamp(300.0, 420.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                _TransportControls(controller: controller, large: true),
+                const SizedBox(height: 6),
+                const _LiveRail(),
+              ],
+            ),
           ),
         ),
         Expanded(
@@ -145,7 +159,8 @@ class _ExpandedPlayerBar extends StatelessWidget {
               children: <Widget>[
                 VolumeControl(controller: controller, compact: false),
                 const SizedBox(width: 12),
-                _QualityPill(label: _qualityLabel(controller)),
+                if (MediaQuery.sizeOf(context).width >= 1080)
+                  _QualityPill(label: _qualityLabel(controller)),
               ],
             ),
           ),
@@ -180,44 +195,62 @@ class _CompactPlayerBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final station = controller.currentStation;
+    final narrow = MediaQuery.sizeOf(context).width < 420;
 
     return Row(
       children: <Widget>[
         _PlayerArtwork(
           isPlaying: controller.playerIsPlaying,
           url: stationFavicon,
-          size: 48,
+          size: narrow ? 42 : 48,
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: narrow ? 8 : 12),
         Expanded(
-          child: PlayerInfo(
-            stationName: stationName,
-            status: controller.playerStatus,
-            active: controller.playerBarVisible,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              PlayerInfo(
+                stationName: stationName,
+                status: controller.playerStatus,
+                active: controller.playerBarVisible,
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 6),
-        _GlassIconButton(
-          tooltip:
-              currentIsFavorite ? 'Remove from favorites' : 'Add to favorites',
-          onPressed: station == null
-              ? null
-              : () => unawaited(controller.toggleFavoriteStation(station)),
-          icon: currentIsFavorite
-              ? Icons.favorite_rounded
-              : Icons.favorite_border_rounded,
-          active: currentIsFavorite,
-        ),
-        const SizedBox(width: 4),
-        _PlayButton(
-          isPlaying: controller.playerIsPlaying,
-          isLoading: controller.playerIsLoading,
-          enabled: station != null,
-          onPressed: station == null
-              ? null
-              : () => unawaited(controller.togglePlayPause()),
-        ),
-        VolumeControl(controller: controller, compact: true),
+        if (!narrow) ...<Widget>[
+          const SizedBox(width: 6),
+          _GlassIconButton(
+            tooltip: currentIsFavorite
+                ? 'Remove from favorites'
+                : 'Add to favorites',
+            onPressed: station == null
+                ? null
+                : () => unawaited(controller.toggleFavoriteStation(station)),
+            icon: currentIsFavorite
+                ? Icons.favorite_rounded
+                : Icons.favorite_border_rounded,
+            active: currentIsFavorite,
+          ),
+          const SizedBox(width: 4),
+          _PlayButton(
+            isPlaying: controller.playerIsPlaying,
+            isLoading: controller.playerIsLoading,
+            enabled: station != null,
+            onPressed: station == null
+                ? null
+                : () => unawaited(controller.togglePlayPause()),
+          ),
+          VolumeControl(controller: controller, compact: true),
+        ] else
+          _PlayButton(
+            isPlaying: controller.playerIsPlaying,
+            isLoading: controller.playerIsLoading,
+            enabled: station != null,
+            onPressed: station == null
+                ? null
+                : () => unawaited(controller.togglePlayPause()),
+          ),
       ],
     );
   }
