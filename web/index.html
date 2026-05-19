@@ -89,6 +89,24 @@
         document.querySelectorAll('audio').forEach(primeAudioElement);
       }
 
+      function resetPipeline() {
+        try {
+          if (state.source) {
+            state.source.disconnect();
+          }
+        } catch (error) {}
+
+        state.filters.forEach(function (filter) {
+          try {
+            filter.disconnect();
+          } catch (error) {}
+        });
+
+        state.source = null;
+        state.filters = [];
+        state.audio = null;
+      }
+
       function buildPipeline(audio) {
         if (!audio) {
           return false;
@@ -102,13 +120,22 @@
           state.context = new AudioContextClass();
         }
 
-        if (state.audio === audio && state.filters.length === frequencies.length) {
+        if (state.audio !== audio) {
+          resetPipeline();
+        } else if (state.audio === audio && state.filters.length === frequencies.length) {
           return true;
         }
 
         primeAudioElement(audio);
         state.audio = audio;
-        state.source = state.context.createMediaElementSource(audio);
+
+        try {
+          state.source = state.context.createMediaElementSource(audio);
+        } catch (error) {
+          // Same <audio> element may already be wired into Web Audio.
+          return state.filters.length === frequencies.length;
+        }
+
         state.filters = frequencies.map(function (frequency, index) {
           const filter = state.context.createBiquadFilter();
           if (index === 0) {
@@ -148,6 +175,9 @@
       }
 
       window.radioWaveEqualizer = {
+        reset: function () {
+          resetPipeline();
+        },
         apply: function (enabled, gains) {
           state.enabled = Boolean(enabled);
           state.gains = Array.from(gains || []).slice(0, frequencies.length).map(clampGain);
@@ -211,9 +241,25 @@
 
       const observer = new MutationObserver(primeExistingAudioElements);
       observer.observe(document.documentElement, { childList: true, subtree: true });
-      document.addEventListener('play', function () {
-        if (state.enabled) {
-          window.radioWaveEqualizer.apply(state.enabled, state.gains);
+      document.addEventListener('play', function (event) {
+        if (!state.enabled) {
+          return;
+        }
+
+        const target = event.target;
+        if (target && target.tagName && target.tagName.toLowerCase() === 'audio') {
+          state.audio = target;
+        }
+
+        window.radioWaveEqualizer.apply(state.enabled, state.gains);
+      }, true);
+
+      document.addEventListener('emptied', function (event) {
+        const target = event.target;
+        if (target && target.tagName && target.tagName.toLowerCase() === 'audio') {
+          if (state.audio === target) {
+            resetPipeline();
+          }
         }
       }, true);
     })();

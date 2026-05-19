@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_color_scheme.dart';
 import '../../state/radio_controller.dart';
 import 'now_playing_page.dart';
+import 'station_card.dart';
 
 class PlayerBar extends StatelessWidget {
   const PlayerBar({required this.controller, super.key});
@@ -106,9 +107,11 @@ class _ExpandedPlayerBar extends StatelessWidget {
         Expanded(
           child: Row(
             children: <Widget>[
-              _PlayerArtwork(
-                isPlaying: controller.playerIsPlaying,
+              StationArtwork(
+                key: ValueKey(station?.uuid ?? 'none'),
                 url: stationFavicon,
+                cacheKey: station?.uuid ?? '',
+                isPlaying: controller.playerIsPlaying,
                 size: 50,
               ),
               const SizedBox(width: 14),
@@ -199,9 +202,11 @@ class _CompactPlayerBar extends StatelessWidget {
 
     return Row(
       children: <Widget>[
-        _PlayerArtwork(
-          isPlaying: controller.playerIsPlaying,
+        StationArtwork(
+          key: ValueKey(station?.uuid ?? 'none'),
           url: stationFavicon,
+          cacheKey: station?.uuid ?? '',
+          isPlaying: controller.playerIsPlaying,
           size: narrow ? 42 : 48,
         ),
         SizedBox(width: narrow ? 8 : 12),
@@ -252,51 +257,6 @@ class _CompactPlayerBar extends StatelessWidget {
                 : () => unawaited(controller.togglePlayPause()),
           ),
       ],
-    );
-  }
-}
-
-// ── Artwork ──────────────────────────────────────────────────────────────────
-
-class _PlayerArtwork extends StatelessWidget {
-  const _PlayerArtwork({
-    required this.isPlaying,
-    required this.url,
-    this.size = 54,
-  });
-
-  final bool isPlaying;
-  final String url;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppColorScheme.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(4),
-      child: Container(
-        width: size,
-        height: size,
-        color: isDark ? c.card : c.surfaceElevated,
-        child: url.isEmpty
-            ? Icon(
-                isPlaying ? Icons.graphic_eq_rounded : Icons.radio_rounded,
-                color: isPlaying ? c.textPrimary : c.textTertiary,
-                size: size * 0.45,
-              )
-            : Image.network(
-                url,
-                fit: BoxFit.cover,
-                webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
-                errorBuilder: (_, __, ___) => Icon(
-                  isPlaying ? Icons.graphic_eq_rounded : Icons.radio_rounded,
-                  color: isPlaying ? c.textPrimary : c.textTertiary,
-                  size: size * 0.45,
-                ),
-              ),
-      ),
     );
   }
 }

@@ -42,6 +42,7 @@ class StationCard extends StatelessWidget {
               children: <Widget>[
                 StationArtwork(
                   url: station.favicon,
+                  cacheKey: station.uuid,
                   isPlaying: isPlaying,
                   size: tight ? 42 : 48,
                 ),
@@ -96,12 +97,15 @@ class StationCard extends StatelessWidget {
 class StationArtwork extends StatelessWidget {
   const StationArtwork({
     required this.url,
+    this.cacheKey = '',
     this.isPlaying = false,
     this.size = 48,
     super.key,
   });
 
   final String url;
+  /// Station id (or other stable id) so favicon reloads when switching stations.
+  final String cacheKey;
   final bool isPlaying;
   final double size;
 
@@ -116,13 +120,24 @@ class StationArtwork extends StatelessWidget {
         height: size,
         color: c.card,
         child: url.isEmpty
-            ? Icon(Icons.radio_rounded, color: c.textTertiary, size: 22)
+            ? Icon(
+                isPlaying ? Icons.graphic_eq_rounded : Icons.radio_rounded,
+                color: isPlaying ? c.textPrimary : c.textTertiary,
+                size: size * 0.46,
+              )
             : Image.network(
                 url,
+                key: ValueKey(
+                  cacheKey.isEmpty ? url : '$cacheKey|$url',
+                ),
                 fit: BoxFit.cover,
+                gaplessPlayback: false,
                 webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
-                errorBuilder: (_, __, ___) =>
-                    Icon(Icons.radio_rounded, color: c.textTertiary, size: 22),
+                errorBuilder: (_, __, ___) => Icon(
+                  isPlaying ? Icons.graphic_eq_rounded : Icons.radio_rounded,
+                  color: isPlaying ? c.textPrimary : c.textTertiary,
+                  size: size * 0.46,
+                ),
               ),
       ),
     );

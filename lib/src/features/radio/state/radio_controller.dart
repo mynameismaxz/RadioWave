@@ -458,6 +458,10 @@ class RadioController extends ChangeNotifier {
       await player.playStation(station);
       _hasLoadedStation = true;
       _loadingTimeout?.cancel();
+      if (equalizerEnabled) {
+        await player.syncEqualizerToCurrentPlayback();
+        _lastEqualizerApplyStationKey = _equalizerStationKey();
+      }
     } on TimeoutException {
       _loadingTimeout?.cancel();
       _showPlaybackError(
@@ -715,6 +719,7 @@ class RadioController extends ChangeNotifier {
     _saveEqualizerSettings();
     _safeNotify();
     await _applyEqualizer();
+    await _syncEqualizerToPlaybackIfNeeded();
   }
 
   Future<void> setEqualizerBand(int index, double gain) async {
@@ -731,6 +736,16 @@ class RadioController extends ChangeNotifier {
     _saveEqualizerSettings();
     _safeNotify();
     await _applyEqualizer();
+    await _syncEqualizerToPlaybackIfNeeded();
+  }
+
+  Future<void> _syncEqualizerToPlaybackIfNeeded() async {
+    if (!equalizerEnabled || currentStation == null || !playerIsPlaying) {
+      return;
+    }
+
+    await player.syncEqualizerToCurrentPlayback();
+    _lastEqualizerApplyStationKey = _equalizerStationKey();
   }
 
   Future<void> resetEqualizer() => setEqualizerPreset('Flat');

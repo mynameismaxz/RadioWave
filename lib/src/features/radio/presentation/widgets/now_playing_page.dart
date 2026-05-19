@@ -300,7 +300,11 @@ class _ArtworkSection extends StatelessWidget {
     }
     return Image.network(
       url,
+      key: ValueKey(
+        station == null ? url : '${station!.uuid}|$url',
+      ),
       fit: BoxFit.cover,
+      gaplessPlayback: false,
       webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
       errorBuilder: (_, __, ___) => const _FallbackArtwork(),
     );

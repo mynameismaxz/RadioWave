@@ -30,6 +30,9 @@ class AudioPlayerService {
 
   Future<void> playStation(Station station) async {
     await _player.stop();
+    if (kIsWeb) {
+      await resetWebEqualizer();
+    }
     await _handler.setMediaItem(_mediaItemFor(station));
     if (kIsWeb) {
       await _player.setWebCrossOrigin(
@@ -40,10 +43,18 @@ class AudioPlayerService {
         .setAudioSource(AudioSource.uri(Uri.parse(station.url)))
         .timeout(const Duration(seconds: 10));
     unawaited(_player.play());
+    unawaited(syncEqualizerToCurrentPlayback());
+  }
+
+  /// Re-attach EQ after the audio source or Android session changes.
+  Future<void> syncEqualizerToCurrentPlayback() async {
     if (kIsWeb) {
-      unawaited(_applyWebEqualizerAfterPlaybackStarts());
-    } else if (defaultTargetPlatform == TargetPlatform.android) {
-      unawaited(_applyAndroidEqualizerWhenReady());
+      await _applyWebEqualizerAfterPlaybackStarts();
+      return;
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await _applyAndroidEqualizerWhenReady();
     }
   }
 
@@ -98,9 +109,10 @@ class AudioPlayerService {
   }
 
   Future<void> _applyAndroidEqualizerWhenReady() async {
-    for (var attempt = 0; attempt < 5; attempt += 1) {
-      await Future<void>.delayed(const Duration(milliseconds: 350));
-      if (_player.androidAudioSessionId != null) {
+    for (var attempt = 0; attempt < 12; attempt += 1) {
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      final sessionId = _player.androidAudioSessionId;
+      if (sessionId != null && sessionId > 0) {
         await _applyEqualizerBands();
         return;
       }
@@ -108,12 +120,10 @@ class AudioPlayerService {
   }
 
   Future<void> _applyWebEqualizerAfterPlaybackStarts() async {
-    if (!_equalizerEnabled) {
-      return;
-    }
-
-    for (var attempt = 0; attempt < 4; attempt += 1) {
-      await Future<void>.delayed(const Duration(milliseconds: 250));
+    for (var attempt = 0; attempt < 10; attempt += 1) {
+      await Future<void>.delayed(
+        Duration(milliseconds: 180 + attempt * 80),
+      );
       await _applyEqualizerBands();
     }
   }
