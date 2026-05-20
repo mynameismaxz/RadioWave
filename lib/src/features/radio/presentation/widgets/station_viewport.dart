@@ -8,25 +8,24 @@ import '../../state/radio_controller.dart';
 import 'station_card.dart';
 
 class StationViewport extends StatelessWidget {
-  const StationViewport({required this.controller, super.key});
+  const StationViewport({
+    required this.controller,
+    required this.bottomInset,
+    required this.horizontalInset,
+    this.scrollController,
+    this.selectedStationIndex = 0,
+    super.key,
+  });
 
   final RadioController controller;
+  final double bottomInset;
+  final double horizontalInset;
+  final ScrollController? scrollController;
+  final int selectedStationIndex;
 
   @override
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
-    final width = MediaQuery.sizeOf(context).width;
-    final safeBottom = MediaQuery.paddingOf(context).bottom;
-    final bottomInset = width < 420
-        ? 96.0 + safeBottom
-        : width < 720
-            ? 108.0 + safeBottom
-            : 120.0 + safeBottom;
-    final horizontalInset = width < 420
-        ? 0.0
-        : width < 720
-            ? 4.0
-            : 8.0;
     switch (controller.viewState) {
       case StationViewState.loading:
         return LoadingStationList(
@@ -62,6 +61,7 @@ class StationViewport extends StatelessWidget {
         );
       case StationViewState.list:
         return ListView.builder(
+          controller: scrollController,
           padding: EdgeInsets.fromLTRB(
             horizontalInset,
             0,
@@ -73,6 +73,7 @@ class StationViewport extends StatelessWidget {
             return StationCard(
               station: controller.stations[index],
               controller: controller,
+              selected: index == selectedStationIndex,
             );
           },
         );
@@ -215,49 +216,66 @@ class StateMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(40, 60, 40, 120),
-        child: Container(
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            color: c.surfaceHighlight,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: c.border),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(icon, size: 56, color: c.textTertiary),
-              const SizedBox(height: 20),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.3,
-                  color: c.textPrimary,
-                ),
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final short = constraints.maxHeight < 360;
+        final edgePadding = EdgeInsets.fromLTRB(
+          constraints.maxWidth < 720 ? 24 : 40,
+          short ? 16 : 60,
+          constraints.maxWidth < 720 ? 24 : 40,
+          short ? 96 : 120,
+        );
+
+        return Center(
+          child: SingleChildScrollView(
+            padding: edgePadding,
+            child: Container(
+              padding: EdgeInsets.all(short ? 18 : 28),
+              decoration: BoxDecoration(
+                color: c.surfaceHighlight,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: c.border),
               ),
-              const SizedBox(height: 8),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: c.textTertiary,
-                  fontSize: 14,
-                  height: 1.5,
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(
+                    icon,
+                    size: short ? 40 : 56,
+                    color: c.textTertiary,
+                  ),
+                  SizedBox(height: short ? 12 : 20),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: short ? 16 : 18,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0,
+                      color: c.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: short ? 4 : 8),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: c.textTertiary,
+                      fontSize: short ? 13 : 14,
+                      height: short ? 1.35 : 1.5,
+                    ),
+                  ),
+                  if (action != null) ...<Widget>[
+                    SizedBox(height: short ? 14 : 24),
+                    action!,
+                  ],
+                ],
               ),
-              if (action != null) ...<Widget>[
-                const SizedBox(height: 24),
-                action!,
-              ],
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

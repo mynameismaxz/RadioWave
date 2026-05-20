@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_color_scheme.dart';
 import '../../../../app/theme/theme_notifier.dart';
+import '../radio_responsive_metrics.dart';
 import '../../domain/radio_tab.dart';
 import '../../state/radio_controller.dart';
 import 'glass.dart';
@@ -12,11 +13,13 @@ import 'logo.dart';
 class AppHeader extends StatefulWidget {
   const AppHeader({
     required this.controller,
+    required this.metrics,
     this.wide = false,
     super.key,
   });
 
   final RadioController controller;
+  final RadioResponsiveMetrics metrics;
   final bool wide;
 
   @override
@@ -59,7 +62,8 @@ class _AppHeaderState extends State<AppHeader> {
       cursorColor: c.textPrimary,
       decoration: glassInputDecoration(
         context: context,
-        hintText: compact ? 'Search stations' : 'What do you want to listen to?',
+        hintText:
+            compact ? 'Search stations' : 'What do you want to listen to?',
         prefixIcon: Icons.search_rounded,
         suffixIcon: _searchController.text.isEmpty
             ? null
@@ -79,13 +83,20 @@ class _AppHeaderState extends State<AppHeader> {
 
     if (widget.wide) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(32, 20, 32, 16),
+        padding: EdgeInsets.fromLTRB(
+          widget.metrics.pageHorizontalPadding,
+          widget.metrics.headerTopPadding,
+          widget.metrics.pageHorizontalPadding,
+          widget.metrics.headerBottomPadding,
+        ),
         child: Row(
           children: <Widget>[
-            const SizedBox(width: 72),
+            if (widget.metrics.size.width >= 1100) const SizedBox(width: 32),
             Expanded(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
+                constraints: BoxConstraints(
+                  maxWidth: widget.metrics.short ? 420 : 520,
+                ),
                 child: searchField,
               ),
             ),
@@ -97,7 +108,12 @@ class _AppHeaderState extends State<AppHeader> {
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: EdgeInsets.fromLTRB(
+        widget.metrics.pageHorizontalPadding,
+        widget.metrics.short ? 8 : 12,
+        widget.metrics.pageHorizontalPadding,
+        widget.metrics.short ? 6 : 8,
+      ),
       child: Row(
         children: <Widget>[
           if (!compact) const Logo(),

@@ -8,9 +8,14 @@ import '../../state/radio_controller.dart';
 import 'glass.dart';
 
 class AddStationPanel extends StatefulWidget {
-  const AddStationPanel({required this.controller, super.key});
+  const AddStationPanel({
+    required this.controller,
+    this.dense = false,
+    super.key,
+  });
 
   final RadioController controller;
+  final bool dense;
 
   @override
   State<AddStationPanel> createState() => _AddStationPanelState();
@@ -31,9 +36,9 @@ class _AddStationPanelState extends State<AddStationPanel> {
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+      padding: EdgeInsets.fromLTRB(20, 0, 20, widget.dense ? 8 : 14),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(widget.dense ? 12 : 16),
         decoration: BoxDecoration(
           color: c.surfaceHighlight,
           borderRadius: BorderRadius.circular(12),
@@ -46,7 +51,8 @@ class _AddStationPanelState extends State<AddStationPanel> {
               controller: _nameController,
               style: TextStyle(fontSize: 14, color: c.textPrimary),
               cursorColor: c.textPrimary,
-              decoration: glassInputDecoration(context: context, hintText: 'Station name'),
+              decoration: glassInputDecoration(
+                  context: context, hintText: 'Station name'),
             );
             final urlField = TextField(
               controller: _urlController,
@@ -98,14 +104,16 @@ class _AddStationPanelState extends State<AddStationPanel> {
                       addButton,
                     ],
                   ),
-                const SizedBox(height: 10),
-                Text(
-                  'Paste a direct MP3, AAC, or OGG stream URL.',
-                  style: TextStyle(
-                    color: c.textTertiary,
-                    fontSize: 12,
+                if (!widget.dense) ...<Widget>[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Paste a direct MP3, AAC, or OGG stream URL.',
+                    style: TextStyle(
+                      color: c.textTertiary,
+                      fontSize: 12,
+                    ),
                   ),
-                ),
+                ],
               ],
             );
           },
@@ -119,7 +127,8 @@ class _AddStationPanelState extends State<AddStationPanel> {
     final url = _urlController.text.trim();
 
     if (name.isEmpty) {
-      widget.controller.showToast('Please enter a station name', ToastType.error);
+      widget.controller
+          .showToast('Please enter a station name', ToastType.error);
       return;
     }
 

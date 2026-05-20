@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 
+import 'android_auto_media_library.dart';
+
 /// Shared handler instance initialized from `main.dart` before `runApp`.
 late final RadioAudioHandler radioAudioHandler;
 
@@ -10,16 +12,33 @@ late final RadioAudioHandler radioAudioHandler;
 /// single Stop action while playing (no Pause), matching radio UX where the
 /// stream cannot be resumed from the paused position.
 class RadioAudioHandler extends BaseAudioHandler {
-  RadioAudioHandler() {
+  RadioAudioHandler({AndroidAutoMediaLibrary? mediaLibrary})
+      : _mediaLibrary = mediaLibrary ?? AndroidAutoMediaLibrary() {
     _player.playbackEventStream.listen(_broadcastState);
   }
 
   final AudioPlayer _player = AudioPlayer();
+  final AndroidAutoMediaLibrary _mediaLibrary;
 
   AudioPlayer get player => _player;
 
   Future<void> setMediaItem(MediaItem item) async {
     mediaItem.add(item);
+  }
+
+  @override
+  Future<void> playMediaItem(MediaItem mediaItem) async {
+    final url = _mediaLibrary.streamUrlFor(mediaItem);
+    if (url == null) {
+      return;
+    }
+
+    await _player.stop();
+    this.mediaItem.add(mediaItem);
+    await _player
+        .setAudioSource(AudioSource.uri(Uri.parse(url)))
+        .timeout(const Duration(seconds: 10));
+    unawaited(_player.play());
   }
 
   @override
@@ -39,12 +58,64 @@ class RadioAudioHandler extends BaseAudioHandler {
     await super.stop();
   }
 
-  Future<void> dispose() => _player.dispose();
+  @override
+  Future<void> playFromMediaId(
+    String mediaId, [
+    Map<String, dynamic>? extras,
+  ]) async {
+    final item = await getMediaItem(mediaId);
+    if (item == null) {
+      return;
+    }
+
+    await playMediaItem(item);
+  }
+
+  @override
+  Future<void> playFromSearch(
+    String query, [
+    Map<String, dynamic>? extras,
+  ]) async {
+    final results = await search(query, extras);
+    if (results.isEmpty) {
+      return;
+    }
+
+    await playMediaItem(results.first);
+  }
+
+  @override
+  Future<List<MediaItem>> getChildren(
+    String parentMediaId, [
+    Map<String, dynamic>? options,
+  ]) {
+    return _mediaLibrary.getChildren(parentMediaId);
+  }
+
+  @override
+  Future<MediaItem?> getMediaItem(String mediaId) {
+    return _mediaLibrary.getMediaItem(mediaId);
+  }
+
+  @override
+  Future<List<MediaItem>> search(
+    String query, [
+    Map<String, dynamic>? extras,
+  ]) {
+    return _mediaLibrary.search(query);
+  }
+
+  Future<void> dispose() async {
+    _mediaLibrary.dispose();
+    await _player.dispose();
+  }
 
   void _broadcastState(PlaybackEvent event) {
     final playing = _player.playing;
     playbackState.add(playbackState.value.copyWith(
-      controls: <MediaControl>[MediaControl.stop],
+      controls: <MediaControl>[
+        if (playing) MediaControl.stop else MediaControl.play,
+      ],
       systemActions: const <MediaAction>{},
       androidCompactActionIndices: const <int>[0],
       processingState: switch (event.processingState) {

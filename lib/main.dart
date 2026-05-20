@@ -10,24 +10,19 @@ import 'src/data/services/radio_audio_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await _lockMobilePortrait();
+  await _lockIosPortrait();
   JustAudioMediaKit.ensureInitialized();
   await themeNotifier.init();
   radioAudioHandler = await _initAudioHandler();
   runApp(const RadioWaveApp());
 }
 
-Future<void> _lockMobilePortrait() async {
+Future<void> _lockIosPortrait() async {
   if (kIsWeb) {
     return;
   }
 
-  const mobilePlatforms = <TargetPlatform>{
-    TargetPlatform.android,
-    TargetPlatform.iOS,
-  };
-
-  if (!mobilePlatforms.contains(defaultTargetPlatform)) {
+  if (defaultTargetPlatform != TargetPlatform.iOS) {
     return;
   }
 

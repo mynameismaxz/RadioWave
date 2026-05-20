@@ -10,11 +10,13 @@ class StationCard extends StatelessWidget {
   const StationCard({
     required this.station,
     required this.controller,
+    this.selected = false,
     super.key,
   });
 
   final Station station;
   final RadioController controller;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -28,64 +30,75 @@ class StationCard extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: tight ? 6 : 12, vertical: 2),
       child: Material(
-        color: isCurrent ? c.cardHover : Colors.transparent,
+        color: selected || isCurrent ? c.cardHover : Colors.transparent,
         borderRadius: BorderRadius.circular(6),
         child: InkWell(
           borderRadius: BorderRadius.circular(6),
           onTap: () => unawaited(controller.playStation(station)),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tight ? 6 : 8,
-              vertical: tight ? 7 : 8,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              border: selected
+                  ? Border.all(
+                      color: c.textPrimary.withValues(alpha: 0.45),
+                    )
+                  : null,
             ),
-            child: Row(
-              children: <Widget>[
-                StationArtwork(
-                  url: station.favicon,
-                  cacheKey: station.uuid,
-                  isPlaying: isPlaying,
-                  size: tight ? 42 : 48,
-                ),
-                SizedBox(width: tight ? 10 : 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        station.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: isCurrent ? c.textPrimary : c.textPrimary,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tight ? 6 : 8,
+                vertical: tight ? 7 : 8,
+              ),
+              child: Row(
+                children: <Widget>[
+                  StationArtwork(
+                    url: station.favicon,
+                    cacheKey: station.uuid,
+                    isPlaying: isPlaying,
+                    size: tight ? 42 : 48,
+                  ),
+                  SizedBox(width: tight ? 10 : 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          station.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: isCurrent ? c.textPrimary : c.textPrimary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      StationMeta(station: station),
-                    ],
+                        const SizedBox(height: 4),
+                        StationMeta(station: station),
+                      ],
+                    ),
                   ),
-                ),
-                if (isPlaying)
-                  const Padding(
-                    padding: EdgeInsets.only(right: 8),
-                    child: PlayingBars(),
+                  if (isPlaying)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 8),
+                      child: PlayingBars(),
+                    ),
+                  IconButton(
+                    tooltip: isFavorite
+                        ? 'Remove from favorites'
+                        : 'Add to favorites',
+                    onPressed: () =>
+                        unawaited(controller.toggleFavoriteStation(station)),
+                    visualDensity: VisualDensity.compact,
+                    icon: Icon(
+                      isFavorite
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      size: 20,
+                      color: isFavorite ? c.textPrimary : c.textTertiary,
+                    ),
                   ),
-                IconButton(
-                  tooltip:
-                      isFavorite ? 'Remove from favorites' : 'Add to favorites',
-                  onPressed: () =>
-                      unawaited(controller.toggleFavoriteStation(station)),
-                  visualDensity: VisualDensity.compact,
-                  icon: Icon(
-                    isFavorite
-                        ? Icons.favorite_rounded
-                        : Icons.favorite_border_rounded,
-                    size: 20,
-                    color: isFavorite ? c.textPrimary : c.textTertiary,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -104,6 +117,7 @@ class StationArtwork extends StatelessWidget {
   });
 
   final String url;
+
   /// Station id (or other stable id) so favicon reloads when switching stations.
   final String cacheKey;
   final bool isPlaying;

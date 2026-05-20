@@ -9,9 +9,14 @@ import '../../state/radio_controller.dart';
 import 'glass.dart';
 
 class CountryFilter extends StatelessWidget {
-  const CountryFilter({required this.controller, super.key});
+  const CountryFilter({
+    required this.controller,
+    this.dense = false,
+    super.key,
+  });
 
   final RadioController controller;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +27,12 @@ class CountryFilter extends StatelessWidget {
     final countriesReady = controller.countriesReady;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(tight ? 10 : 16, 0, tight ? 10 : 16, 8),
+      padding: EdgeInsets.fromLTRB(
+        tight ? 10 : 16,
+        0,
+        tight ? 10 : 16,
+        dense ? 6 : 8,
+      ),
       child: Row(
         children: <Widget>[
           if (!tight) ...<Widget>[
@@ -160,6 +170,17 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final media = MediaQuery.of(context);
+    final keyboardHeight = media.viewInsets.bottom;
+    final keyboardOpen = keyboardHeight > 0;
+    final availableHeight = media.size.height -
+        keyboardHeight -
+        media.padding.top -
+        media.padding.bottom -
+        24;
+    final sheetHeight = keyboardOpen
+        ? availableHeight.clamp(260.0, media.size.height * 0.72)
+        : media.size.height * 0.72;
     final query = _searchController.text.trim().toLowerCase();
     final filteredCountries = widget.countries.where((country) {
       if (query.isEmpty) {
@@ -180,11 +201,11 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
           padding: EdgeInsets.only(
             left: 20,
             right: 20,
-            top: 8,
-            bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+            top: keyboardOpen ? 6 : 8,
+            bottom: keyboardOpen ? 8 : 16,
           ),
           child: SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.72,
+            height: sheetHeight,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
@@ -192,7 +213,7 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
                   child: Container(
                     width: 36,
                     height: 4,
-                    margin: const EdgeInsets.only(bottom: 12),
+                    margin: EdgeInsets.only(bottom: keyboardOpen ? 8 : 12),
                     decoration: BoxDecoration(
                       color: isDark
                           ? Colors.white.withValues(alpha: 0.30)
@@ -221,7 +242,7 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: keyboardOpen ? 8 : 12),
                 TextField(
                   controller: _searchController,
                   autofocus: true,
@@ -248,14 +269,14 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: keyboardOpen ? 8 : 12),
                 _CountryOptionTile(
                   title: 'All Countries',
                   subtitle: '${widget.countries.length} countries',
                   selected: widget.selectedCountry.isEmpty,
                   onTap: () => Navigator.of(context).pop(''),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: keyboardOpen ? 4 : 6),
                 Expanded(
                   child: filteredCountries.isEmpty
                       ? Center(

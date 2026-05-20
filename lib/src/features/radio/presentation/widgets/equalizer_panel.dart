@@ -7,20 +7,26 @@ import '../../../../app/theme/app_color_scheme.dart';
 import '../../state/radio_controller.dart';
 
 class EqualizerPanel extends StatelessWidget {
-  const EqualizerPanel({required this.controller, super.key});
+  const EqualizerPanel({
+    required this.controller,
+    required this.bottomInset,
+    this.dense = false,
+    super.key,
+  });
 
   final RadioController controller;
+  final double bottomInset;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
-    final bottomInset = MediaQuery.paddingOf(context).bottom + 122;
 
     return ListView(
       padding: EdgeInsets.fromLTRB(18, 0, 18, bottomInset),
       children: <Widget>[
         Container(
-          padding: const EdgeInsets.fromLTRB(22, 20, 22, 20),
+          padding: EdgeInsets.fromLTRB(22, dense ? 14 : 20, 22, 20),
           decoration: BoxDecoration(
             color: c.surfaceHighlight,
             borderRadius: BorderRadius.circular(10),
@@ -33,11 +39,15 @@ class EqualizerPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   _EqualizerHeader(controller: controller),
-                  const SizedBox(height: 20),
+                  SizedBox(height: dense ? 12 : 20),
                   _PresetPicker(controller: controller, compact: compact),
-                  const SizedBox(height: 24),
-                  _BandEditor(controller: controller, compact: compact),
-                  const SizedBox(height: 18),
+                  SizedBox(height: dense ? 14 : 24),
+                  _BandEditor(
+                    controller: controller,
+                    compact: compact,
+                    dense: dense,
+                  ),
+                  SizedBox(height: dense ? 12 : 18),
                   Align(
                     alignment: Alignment.centerRight,
                     child: OutlinedButton(
@@ -187,10 +197,12 @@ class _BandEditor extends StatelessWidget {
   const _BandEditor({
     required this.controller,
     required this.compact,
+    required this.dense,
   });
 
   final RadioController controller;
   final bool compact;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +210,11 @@ class _BandEditor extends StatelessWidget {
     final minWidth = compact ? 580.0 : 0.0;
     final graph = Container(
       constraints: BoxConstraints(minWidth: minWidth),
-      height: compact ? 300 : 292,
+      height: dense
+          ? 220
+          : compact
+              ? 300
+              : 292,
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,

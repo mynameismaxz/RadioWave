@@ -1,7 +1,9 @@
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:radio_app_flutter/src/app/theme/theme_notifier.dart';
 import 'package:radio_app_flutter/src/data/models/station.dart';
+import 'package:radio_app_flutter/src/data/services/android_auto_media_library.dart';
 import 'package:radio_app_flutter/src/data/services/equalizer_settings_store.dart';
 import 'package:radio_app_flutter/src/data/services/playback_state_store.dart';
 import 'package:radio_app_flutter/src/features/radio/domain/radio_tab.dart';
@@ -79,6 +81,32 @@ void main() {
     expect(RadioTab.favorites.label, 'Favorites');
     expect(RadioTab.equalizer.label, 'Equalizer');
     expect(RadioTab.add.label, 'Add Station');
+  });
+
+  test('android auto library exposes browse roots and playable station items',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+    final library = AndroidAutoMediaLibrary();
+    addTearDown(library.dispose);
+
+    final roots = await library.getChildren(AudioService.browsableRootId);
+    expect(
+      roots.map((item) => item.id),
+      <String>[
+        AndroidAutoMediaLibrary.favoritesRootId,
+        AndroidAutoMediaLibrary.popularRootId,
+      ],
+    );
+    expect(roots.every((item) => item.playable == false), isTrue);
+
+    final station = Station.custom('Car FM', 'https://example.com/car.mp3');
+    final item = library.mediaItemFor(station);
+
+    expect(item.playable, isTrue);
+    expect(item.isLive, isTrue);
+    expect(item.title, 'Car FM');
+    expect(library.streamUrlFor(item), 'https://example.com/car.mp3');
+    expect(await library.getMediaItem(item.id), item);
   });
 
   test('theme notifier restores and persists the selected mode', () async {

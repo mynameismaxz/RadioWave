@@ -2,6 +2,9 @@ package com.example.radio_app_flutter
 
 import android.media.audiofx.Equalizer
 import android.util.Log
+import android.view.KeyEvent
+import android.view.MotionEvent
+import android.view.InputDevice
 import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -9,6 +12,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : AudioServiceActivity() {
     private var equalizer: Equalizer? = null
     private var equalizerSessionId: Int? = null
+    private var rotaryChannel: MethodChannel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -33,6 +37,58 @@ class MainActivity : AudioServiceActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        rotaryChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "com.example.radio_app_flutter/rotary"
+        )
+    }
+
+    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        if (event.action == MotionEvent.ACTION_SCROLL &&
+            event.isFromSource(InputDevice.SOURCE_ROTARY_ENCODER)
+        ) {
+            val scroll = event.getAxisValue(MotionEvent.AXIS_SCROLL)
+            if (scroll != 0f) {
+                val delta = if (scroll < 0f) 1 else -1
+                sendRotaryEvent("rotate", mapOf("delta" to delta))
+                return true
+            }
+        }
+
+        return super.dispatchGenericMotionEvent(event)
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action != KeyEvent.ACTION_DOWN) {
+            return super.dispatchKeyEvent(event)
+        }
+
+        val key = when (event.keyCode) {
+            KeyEvent.KEYCODE_DPAD_UP -> "up"
+            KeyEvent.KEYCODE_DPAD_DOWN -> "down"
+            KeyEvent.KEYCODE_DPAD_LEFT -> "left"
+            KeyEvent.KEYCODE_DPAD_RIGHT -> "right"
+            KeyEvent.KEYCODE_DPAD_CENTER,
+            KeyEvent.KEYCODE_ENTER,
+            KeyEvent.KEYCODE_NUMPAD_ENTER -> "select"
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> "playPause"
+            KeyEvent.KEYCODE_MEDIA_STOP -> "stop"
+            KeyEvent.KEYCODE_MEDIA_NEXT -> "next"
+            KeyEvent.KEYCODE_MEDIA_PREVIOUS -> "previous"
+            else -> null
+        }
+
+        if (key != null) {
+            sendRotaryEvent("key", mapOf("key" to key))
+            return true
+        }
+
+        return super.dispatchKeyEvent(event)
+    }
+
+    private fun sendRotaryEvent(method: String, args: Map<String, Any>) {
+        rotaryChannel?.invokeMethod(method, args)
     }
 
     private fun setEqualizer(enabled: Boolean, audioSessionId: Int?, gains: List<Double>) {

@@ -9,9 +9,16 @@ import 'now_playing_page.dart';
 import 'station_card.dart';
 
 class PlayerBar extends StatelessWidget {
-  const PlayerBar({required this.controller, super.key});
+  const PlayerBar({
+    required this.controller,
+    required this.height,
+    required this.short,
+    super.key,
+  });
 
   final RadioController controller;
+  final double height;
+  final bool short;
 
   @override
   Widget build(BuildContext context) {
@@ -19,11 +26,6 @@ class PlayerBar extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final narrow = screenWidth < 420;
-    final barHeight = screenWidth < 420
-        ? 72.0
-        : screenWidth < 720
-            ? 80.0
-            : 88.0;
     final horizontalPadding = narrow ? 8.0 : 14.0;
     final verticalPadding = narrow ? 5.0 : 6.0;
     final station = controller.currentStation;
@@ -43,7 +45,7 @@ class PlayerBar extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                height: barHeight,
+                height: height,
                 padding: EdgeInsets.symmetric(
                   horizontal: horizontalPadding,
                   vertical: verticalPadding,
@@ -59,7 +61,7 @@ class PlayerBar extends StatelessWidget {
                 ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final compact = constraints.maxWidth < 720;
+                    final compact = constraints.maxWidth < 720 || short;
                     if (compact) {
                       return _CompactPlayerBar(
                         controller: controller,
