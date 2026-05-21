@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -86,35 +87,52 @@ class NowPlayingPage extends StatelessWidget {
                 ),
               ),
               // ── Main content ──
-              SafeArea(
-                child: Column(
-                  children: <Widget>[
-                    _TopBar(controller: controller),
-                    Expanded(
-                      flex: 5,
-                      child: _ArtworkSection(station: station),
-                    ),
-                    _StationInfo(
+              if (kIsWeb)
+                Positioned.fill(
+                  child: SafeArea(
+                    child: _WebNowPlayingLayout(
                       station: station,
-                      isFavorite: isFavorite,
                       controller: controller,
+                      isFavorite: isFavorite,
                     ),
-                    const _LiveIndicator(),
-                    _PlaybackControls(controller: controller),
-                    _BottomActions(controller: controller),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-              Positioned.fill(
-                child: SafeArea(
-                  child: _WebNowPlayingLayout(
-                    controller: controller,
-                    station: station,
-                    isFavorite: isFavorite,
+                  ),
+                )
+              else
+                SafeArea(
+                  child: LayoutBuilder(
+                    builder: (BuildContext context, BoxConstraints box) {
+                      final nativeLandscape =
+                          box.maxWidth > box.maxHeight && box.maxWidth >= 700;
+
+                      if (nativeLandscape) {
+                        return _NativeLandscapeNowPlayingLayout(
+                          station: station,
+                          controller: controller,
+                          isFavorite: isFavorite,
+                        );
+                      }
+
+                      return Column(
+                        children: <Widget>[
+                          _TopBar(controller: controller),
+                          Expanded(
+                            flex: 5,
+                            child: _ArtworkSection(station: station),
+                          ),
+                          _StationInfo(
+                            station: station,
+                            isFavorite: isFavorite,
+                            controller: controller,
+                          ),
+                          const _LiveIndicator(),
+                          _PlaybackControls(controller: controller),
+                          _BottomActions(controller: controller),
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    },
                   ),
                 ),
-              ),
             ],
           ),
         );
@@ -126,6 +144,83 @@ class NowPlayingPage extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────
 // Top Bar — chevron down to dismiss + "Now Playing" label
 // ─────────────────────────────────────────────────────────────────
+
+class _NativeLandscapeNowPlayingLayout extends StatelessWidget {
+  const _NativeLandscapeNowPlayingLayout({
+    required this.station,
+    required this.controller,
+    required this.isFavorite,
+  });
+
+  final Station? station;
+  final RadioController controller;
+  final bool isFavorite;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        _TopBar(controller: controller),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(28, 4, 28, 12),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  flex: 4,
+                  child: LayoutBuilder(
+                    builder:
+                        (BuildContext context, BoxConstraints constraints) {
+                      final side = math
+                          .min(
+                            constraints.maxWidth,
+                            constraints.maxHeight * 0.92,
+                          )
+                          .clamp(140.0, 360.0)
+                          .toDouble();
+
+                      return Center(
+                        child: SizedBox(
+                          width: side,
+                          height: side,
+                          child: _ArtworkSection(station: station),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  flex: 6,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.center,
+                    child: SizedBox(
+                      width: 520,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          _StationInfo(
+                            station: station,
+                            isFavorite: isFavorite,
+                            controller: controller,
+                          ),
+                          const _LiveIndicator(),
+                          _PlaybackControls(controller: controller),
+                          _BottomActions(controller: controller),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _WebNowPlayingLayout extends StatelessWidget {
   const _WebNowPlayingLayout({
@@ -143,18 +238,12 @@ class _WebNowPlayingLayout extends StatelessWidget {
     final c = AppColorScheme.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = MediaQuery.sizeOf(context);
-    // Android Automotive / landscape head units often have width >> height but
-    // height just under 820px; the old gate forced a 30–36px favicon there.
-    final isDesktopPoster = size.width >= 1000 && size.height >= 820;
-    final isAutomotiveLikeLandscape =
-        size.width > size.height && size.width >= 880 && size.height >= 420;
-    final largeArtwork = isDesktopPoster || isAutomotiveLikeLandscape;
-    final tight =
-        !isDesktopPoster && (size.height < 700 || isAutomotiveLikeLandscape);
-    final sidePadding = size.width < 900 ? 28.0 : 36.0;
-    final double smallArtworkSize = tight ? 30.0 : 36.0;
-    final double innerWidth =
-        (size.width - 2 * sidePadding).clamp(160.0, size.width);
+    final compact = size.height < 720 || size.width < 480;
+    final sidePadding = size.width < 480
+        ? 28.0
+        : size.width < 900
+            ? 36.0
+            : 48.0;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -174,78 +263,118 @@ class _WebNowPlayingLayout extends StatelessWidget {
                 ],
         ),
       ),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          sidePadding,
-          tight ? 8 : 14,
-          sidePadding,
-          tight ? 12 : 18,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            _WebTopBar(controller: controller),
-            SizedBox(height: largeArtwork ? (tight ? 8 : 16) : (tight ? 10 : 18)),
-            if (largeArtwork)
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (BuildContext context, BoxConstraints box) {
-                    // Prefer ~34% of inner width, but never exceed vertical slack
-                    // (prevents bottom overflow on short landscape head units).
-                    final fromWidth = innerWidth * 0.34;
-                    final side = math
-                        .min(480.0, math.min(fromWidth, box.maxHeight))
-                        .toDouble();
-                    final radius =
-                        (side * 0.055).clamp(8.0, 22.0).toDouble();
-                    return Center(
-                      child: _SmallArtwork(
-                        station: station,
-                        size: side,
-                        radius: radius,
-                      ),
-                    );
-                  },
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final topPadding = compact ? 6.0 : 12.0;
+          final bottomPadding = compact ? 6.0 : 12.0;
+          final controlsWidth =
+              (constraints.maxWidth - (sidePadding * 2)).clamp(160.0, 1200.0);
+
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              sidePadding,
+              topPadding,
+              sidePadding,
+              bottomPadding,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                _WebTopBar(controller: controller),
+                SizedBox(height: compact ? 8 : 12),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder:
+                        (BuildContext context, BoxConstraints bodyConstraints) {
+                      final bodyHeight =
+                          math.max(0.0, bodyConstraints.maxHeight);
+                      final preferredBottomHeight = math.min(
+                        bodyHeight * (compact ? 0.40 : 0.36),
+                        compact ? 258.0 : 300.0,
+                      );
+                      final minBottomHeight = math.min(
+                        compact ? 180.0 : 210.0,
+                        bodyHeight * 0.70,
+                      );
+                      final maxBottomHeight = math.max(
+                        minBottomHeight,
+                        math.min(compact ? 258.0 : 300.0, bodyHeight * 0.58),
+                      );
+                      final bottomSlotHeight = preferredBottomHeight
+                          .clamp(minBottomHeight, maxBottomHeight)
+                          .toDouble();
+                      final artworkSlotHeight =
+                          math.max(0.0, bodyHeight - bottomSlotHeight);
+                      final artworkSide = math.min(
+                        math.max(0.0, constraints.maxWidth - (sidePadding * 2)),
+                        math.min(
+                          artworkSlotHeight * (compact ? 0.84 : 0.90),
+                          520.0,
+                        ),
+                      );
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          SizedBox(
+                            height: artworkSlotHeight,
+                            child: Center(
+                              child: _SmallArtwork(
+                                station: station,
+                                size: artworkSide,
+                                radius: (artworkSide * 0.055).clamp(8.0, 22.0),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height: bottomSlotHeight,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.bottomCenter,
+                              child: SizedBox(
+                                width: controlsWidth,
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    _WebStationHeader(
+                                      station: station,
+                                      controller: controller,
+                                      isFavorite: isFavorite,
+                                      compact: compact,
+                                    ),
+                                    SizedBox(height: compact ? 4 : 8),
+                                    Divider(
+                                      height: 1,
+                                      thickness: 1,
+                                      color:
+                                          c.textPrimary.withValues(alpha: 0.18),
+                                    ),
+                                    SizedBox(height: compact ? 6 : 10),
+                                    const _WebLiveRow(),
+                                    SizedBox(height: compact ? 6 : 10),
+                                    _WebPlaybackControls(
+                                      controller: controller,
+                                      compact: compact,
+                                    ),
+                                    SizedBox(height: compact ? 2 : 8),
+                                    _WebVolumeRow(controller: controller),
+                                    _WebBottomActions(controller: controller),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
-              )
-            else ...<Widget>[
-              Center(
-                child: _SmallArtwork(
-                  station: station,
-                  size: smallArtworkSize,
-                  radius: 4,
-                ),
-              ),
-              const Spacer(),
-            ],
-            if (largeArtwork) SizedBox(height: tight ? 8 : 12),
-            _WebStationHeader(
-              station: station,
-              controller: controller,
-              isFavorite: isFavorite,
-              tight: tight,
-              largeArtwork: largeArtwork,
+              ],
             ),
-            SizedBox(height: tight ? 6 : 8),
-            Divider(
-              height: 1,
-              thickness: 1,
-              color: c.textPrimary.withValues(alpha: 0.18),
-            ),
-            SizedBox(height: tight ? 8 : 12),
-            const _WebLiveRow(),
-            SizedBox(height: tight ? 8 : 12),
-            _WebPlaybackControls(
-              controller: controller,
-              tight: tight,
-              largeArtwork: largeArtwork,
-            ),
-            SizedBox(height: tight ? 8 : 14),
-            _WebVolumeRow(controller: controller),
-            SizedBox(height: tight ? 4 : 8),
-            _WebBottomActions(controller: controller),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -342,15 +471,13 @@ class _WebStationHeader extends StatelessWidget {
     required this.station,
     required this.controller,
     required this.isFavorite,
-    required this.tight,
-    required this.largeArtwork,
+    required this.compact,
   });
 
   final Station? station;
   final RadioController controller;
   final bool isFavorite;
-  final bool tight;
-  final bool largeArtwork;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -367,27 +494,19 @@ class _WebStationHeader extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: c.textPrimary,
-                  fontSize: largeArtwork
-                      ? 28
-                      : tight
-                          ? 22
-                          : 24,
+                  fontSize: compact ? 22 : 28,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0,
                 ),
               ),
-              SizedBox(height: tight ? 4 : 6),
+              SizedBox(height: compact ? 3 : 6),
               Text(
                 _stationSubtitle(station),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: c.textSecondary,
-                  fontSize: largeArtwork
-                      ? 18
-                      : tight
-                          ? 15
-                          : 16,
+                  fontSize: compact ? 15 : 18,
                   height: 1.2,
                   letterSpacing: 0,
                 ),
@@ -400,11 +519,7 @@ class _WebStationHeader extends StatelessWidget {
           onPressed: station == null
               ? null
               : () => unawaited(controller.toggleFavoriteStation(station!)),
-          iconSize: largeArtwork
-              ? 38
-              : tight
-                  ? 32
-                  : 36,
+          iconSize: compact ? 32 : 38,
           icon: Icon(
             isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
             color: c.textPrimary,
@@ -456,37 +571,26 @@ class _WebLiveRow extends StatelessWidget {
 class _WebPlaybackControls extends StatelessWidget {
   const _WebPlaybackControls({
     required this.controller,
-    required this.tight,
-    required this.largeArtwork,
+    required this.compact,
   });
 
   final RadioController controller;
-  final bool tight;
-  final bool largeArtwork;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final c = AppColorScheme.of(context);
     final hasStation = controller.currentStation != null;
-    // Large-art layouts (incl. Android Auto): drop decorative shuffle/repeat and
-    // shrink the control cluster so artwork can dominate.
-    final compactCluster = largeArtwork;
-    final skipSize = compactCluster
-        ? (tight ? 28.0 : 30.0)
-        : (tight ? 34.0 : 38.0);
-    final gapOuter = compactCluster ? 12.0 : (tight ? 28.0 : 34.0);
-    final gapInner = compactCluster ? 10.0 : (tight ? 14.0 : 18.0);
-    final playSize = compactCluster
-        ? (tight ? 56.0 : 62.0)
-        : (tight ? 72.0 : 78.0);
+    final skipSize = compact ? 32.0 : 38.0;
+    final gapOuter = compact ? 18.0 : 34.0;
+    final gapInner = compact ? 12.0 : 18.0;
+    final playSize = compact ? 64.0 : 78.0;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        if (!compactCluster) ...<Widget>[
-          Icon(Icons.shuffle_rounded, size: 24, color: c.textSecondary),
-          SizedBox(width: gapOuter),
-        ],
+        Icon(Icons.shuffle_rounded, size: 24, color: c.textSecondary),
+        SizedBox(width: gapOuter),
         IconButton(
           tooltip: 'Previous station',
           onPressed: hasStation
@@ -499,7 +603,7 @@ class _WebPlaybackControls extends StatelessWidget {
         SizedBox(width: gapInner),
         _LargePlayButton(
           controller: controller,
-          size: compactCluster ? playSize : (tight ? 72 : 78),
+          size: playSize,
         ),
         SizedBox(width: gapInner),
         IconButton(
@@ -510,10 +614,8 @@ class _WebPlaybackControls extends StatelessWidget {
           visualDensity: VisualDensity.compact,
           icon: Icon(Icons.skip_next_rounded, color: c.textPrimary),
         ),
-        if (!compactCluster) ...<Widget>[
-          SizedBox(width: gapOuter),
-          Icon(Icons.repeat_rounded, size: 24, color: c.textSecondary),
-        ],
+        SizedBox(width: gapOuter),
+        Icon(Icons.repeat_rounded, size: 24, color: c.textSecondary),
       ],
     );
   }

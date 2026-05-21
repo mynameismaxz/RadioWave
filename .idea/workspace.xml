@@ -6,21 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="f5093086-9346-4d95-a2a2-0d9ae4b2c72b" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/AndroidManifest.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/app/src/main/kotlin/com/example/radio_app_flutter/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/src/main/kotlin/com/example/radio_app_flutter/MainActivity.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/main.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/main.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/data/services/radio_audio_handler.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/data/services/radio_audio_handler.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/features/radio/presentation/radio_wave_home.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/features/radio/presentation/radio_wave_home.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/add_station_panel.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/add_station_panel.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/app_header.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/app_header.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/country_filter.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/country_filter.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/equalizer_panel.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/equalizer_panel.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/now_playing_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/now_playing_page.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/player_bar.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/player_bar.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/sidebar_nav.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/sidebar_nav.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/station_card.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/station_card.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/station_viewport.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/features/radio/presentation/widgets/station_viewport.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/widget_test.dart" beforeDir="false" afterPath="$PROJECT_DIR$/test/widget_test.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/windows/flutter/generated_plugin_registrant.cc" beforeDir="false" afterPath="$PROJECT_DIR$/windows/flutter/generated_plugin_registrant.cc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/windows/flutter/generated_plugin_registrant.h" beforeDir="false" afterPath="$PROJECT_DIR$/windows/flutter/generated_plugin_registrant.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/windows/flutter/generated_plugins.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/windows/flutter/generated_plugins.cmake" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -64,6 +53,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Flutter.main.dart.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
@@ -73,7 +63,7 @@
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "dart.analysis.tool.window.visible": "false",
-    "git-widget-placeholder": "feature/android-auto",
+    "git-widget-placeholder": "main",
     "io.flutter.project.isFirstOpen": "true",
     "kotlin-language-version-configured": "true",
     "show.migrate.to.gradle.popup": "false"
