@@ -1,101 +1,154 @@
-# RadioWave Flutter
+# RadioWave
 
-This is a structured Flutter conversion of the original Vue/Vite RadioWave app.
-It targets mobile and web first, while keeping the source compatible with Android,
-iOS, web, macOS, Windows, and Linux.
+[![CI](https://github.com/cs6636291/RadioWave/actions/workflows/ci.yml/badge.svg)](https://github.com/cs6636291/RadioWave/actions/workflows/ci.yml)
+[![Build APK](https://github.com/cs6636291/RadioWave/actions/workflows/build-apk.yml/badge.svg)](https://github.com/cs6636291/RadioWave/actions/workflows/build-apk.yml)
+[![Deploy Web](https://github.com/cs6636291/RadioWave/actions/workflows/deploy.yml/badge.svg)](https://github.com/cs6636291/RadioWave/actions/workflows/deploy.yml)
 
-## Structure
+RadioWave is a responsive Flutter internet radio app for web, mobile, desktop,
+and Android Automotive. It discovers public stations through Radio Browser,
+plays live streams with `just_audio`, and includes favorites, custom stations,
+equalizer controls, Android Auto media browsing, and car rotary input support.
+
+Live web app: [radiowave.pages.dev](https://radiowave.pages.dev/)
+
+## Highlights
+
+- Discover and search stations from Radio Browser
+- Filter stations by country
+- Save favorites locally with `shared_preferences`
+- Add custom stream URLs
+- Stream audio with `just_audio`
+- Windows and Linux audio support with `just_audio_media_kit`
+- Responsive web-style player and Android Automotive landscape layout
+- Android Auto media library integration
+- Car rotary and D-pad navigation support
+- Cloudflare Pages web deployment
+- GitHub Actions CI, APK artifact builds, and manual releases
+
+## Tech Stack
+
+- Flutter 3.27+
+- Dart 3.4+
+- `just_audio`
+- `audio_service`
+- `shared_preferences`
+- Cloudflare Pages / Wrangler
+- GitHub Actions
+
+## Project Structure
 
 ```text
 lib/
   main.dart
   src/
-    app/                  App shell and theme
-    core/                 Small shared utilities
+    app/                  App shell, theme, and startup wiring
+    core/                 Shared utilities
     data/
-      models/             Station, country, toast models
-      services/           Radio Browser API, favorites, audio player
+      models/             Station, country, and toast models
+      services/           Radio Browser, audio, storage, Android Auto
     features/radio/
       domain/             Tabs and view-state enums
       state/              RadioController app state
-      presentation/       Screens and widgets
+      presentation/       Screens, responsive layouts, and widgets
+
+android/                  Android and Android Automotive integration
+docs/                     Platform and release documentation
+scripts/                  Cloudflare build scripts
+test/                     Unit and widget tests
+tool/                     Local Flutter helper scripts for Windows
+web/                      Flutter web shell
 ```
 
-## Features
+## Getting Started
 
-- Discover stations from Radio Browser
-- Search by station name
-- Country filter
-- Favorites stored locally with `shared_preferences`
-- Add custom stream URLs
-- Streaming audio playback with `just_audio`
-- Windows/Linux audio bridge with `just_audio_media_kit`
-- Bottom player bar with play/pause, favorite, mute, and volume controls
-- Loading, empty, and error states
-
-## Run
-
-This machine has Flutter at `C:\flutter\bin\flutter.bat`, but `flutter` may not be available in PATH. Use the included `.cmd` helpers because they are not blocked by PowerShell script execution policy:
+This repository includes Windows helper scripts because local Flutter may not be
+available in `PATH`.
 
 ```powershell
+cd C:\tmp\radio_app_flutter_run
 .\tool\flutter.cmd pub get
 .\tool\flutter.cmd analyze
 .\tool\flutter.cmd test
 ```
 
-Generate platform folders:
-
-```powershell
-.\tool\create_platforms.cmd
-```
-
-Mobile and web:
+Run on web:
 
 ```powershell
 .\tool\run_web.cmd
-.\tool\run_android.cmd
 ```
 
-Or call Flutter directly with its full path:
+Run on Android or Android Automotive:
 
 ```powershell
-& "C:\flutter\bin\flutter.bat" run -d chrome
-& "C:\flutter\bin\flutter.bat" run -d android
+.\tool\flutter.cmd run -d emulator-5554
 ```
 
-If you want the normal `flutter` command to work in every new terminal, add `C:\flutter\bin` to your user PATH, then restart PowerShell.
-
-Or run:
+Build a debug APK:
 
 ```powershell
-.\tool\add_flutter_to_user_path.cmd
+.\tool\flutter.cmd build apk --debug
 ```
 
-Then close and reopen PowerShell.
-
-iOS must be run from macOS with Xcode:
+Build a release APK:
 
 ```powershell
-flutter run -d ios
+.\tool\flutter.cmd build apk --release
 ```
 
-## Platform Notes
+## Android Automotive
 
-See [docs/platform_setup.md](docs/platform_setup.md) for Android/iOS/macOS network settings and web playback caveats.
+RadioWave declares Android Auto media support and exposes browseable media roots
+for favorites and popular stations. The app also supports landscape layouts,
+D-pad navigation, media keys, and rotary events on Android Automotive emulators.
 
-## Deploy to Cloudflare Workers
+Typical local install flow:
 
-This project deploys the Flutter web production output through Wrangler static assets.
+```powershell
+.\tool\flutter.cmd build apk --debug
+adb install -r build\app\outputs\flutter-apk\app-debug.apk
+adb shell am start -n com.example.radio_app_flutter/.MainActivity
+```
 
-In Cloudflare Workers > Settings > Build, use:
+## CI/CD
+
+The repository uses three workflow types:
+
+- `ci.yml` validates every pull request and push to `main`
+- `build-apk.yml` builds downloadable APK artifacts from `main` or manual runs
+- `release.yml` creates a GitHub Release manually from the Actions tab
+- `deploy.yml` deploys Flutter web to Cloudflare Pages from `main`
+
+Release documentation is in [docs/release_process.md](docs/release_process.md).
+
+## Versioning
+
+Flutter versioning is controlled by `pubspec.yaml`:
+
+```yaml
+version: 1.0.0+1
+```
+
+Use this format:
 
 ```text
-Build command: bash scripts/cloudflare_build.sh
-Deploy command: npx wrangler deploy
-Version command: npx wrangler versions upload
-Root directory: /
+versionName+versionCode
 ```
 
-The build script installs Flutter stable in the Cloudflare build environment, runs `flutter pub get`, then creates `build/web`. Wrangler is configured to upload `build/web` and to fall back to `index.html` for Flutter's single-page app routes.
+Example:
 
-# RadioWave
+```yaml
+version: 1.0.1+2
+```
+
+Increase `versionCode` for every Android build intended for release.
+
+## Documentation
+
+- [Platform setup](docs/platform_setup.md)
+- [Release process](docs/release_process.md)
+- [Contributing](CONTRIBUTING.md)
+
+## License
+
+No license has been declared yet. Add a `LICENSE` file before accepting external
+contributions or distributing production builds publicly.

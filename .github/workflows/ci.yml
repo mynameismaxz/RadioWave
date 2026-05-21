@@ -1,16 +1,17 @@
-name: Deploy Web
+name: CI
 
 on:
+  pull_request:
   push:
     branches:
       - main
 
 concurrency:
-  group: deploy-web-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  flutter:
     runs-on: ubuntu-latest
 
     steps:
@@ -34,9 +35,3 @@ jobs:
 
       - name: Build web
         run: flutter build web --release
-
-      - name: Deploy to Cloudflare Pages
-        run: npx wrangler pages deploy build/web --project-name=radiowave
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -1,16 +1,17 @@
-name: Deploy Web
+name: Build APK
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
 
 concurrency:
-  group: deploy-web-${{ github.ref }}
+  group: build-apk-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  android:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,11 +33,12 @@ jobs:
       - name: Test
         run: flutter test
 
-      - name: Build web
-        run: flutter build web --release
+      - name: Build release APK
+        run: flutter build apk --release
 
-      - name: Deploy to Cloudflare Pages
-        run: npx wrangler pages deploy build/web --project-name=radiowave
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: radiowave-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
