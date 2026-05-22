@@ -43,11 +43,36 @@ jobs:
       - name: Test
         run: flutter test
 
+      - name: Configure Android signing
+        shell: bash
+        env:
+          ANDROID_UPLOAD_KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$ANDROID_UPLOAD_KEYSTORE_BASE64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_PASSWORD" ] || [ -z "$ANDROID_KEY_ALIAS" ]; then
+            echo "Android signing secrets are required for release builds."
+            exit 1
+          fi
+          echo "$ANDROID_UPLOAD_KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
+          {
+            echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
+            echo "storeFile=../upload-keystore.jks"
+          } > android/key.properties
+
       - name: Build Android APK
         run: flutter build apk --release
 
+      - name: Build Android App Bundle
+        run: flutter build appbundle --release
+
       - name: Prepare release asset
-        run: cp build/app/outputs/flutter-apk/app-release.apk RadioWave-v${{ inputs.version }}.apk
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk RadioWave-v${{ inputs.version }}.apk
+          cp build/app/outputs/bundle/release/app-release.aab RadioWave-v${{ inputs.version }}.aab
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -55,4 +80,6 @@ jobs:
           tag_name: v${{ inputs.version }}
           name: RadioWave v${{ inputs.version }}
           generate_release_notes: true
-          files: RadioWave-v${{ inputs.version }}.apk
+          files: |
+            RadioWave-v${{ inputs.version }}.apk
+            RadioWave-v${{ inputs.version }}.aab

@@ -95,6 +95,14 @@ Build a release APK:
 .\tool\flutter.cmd build apk --release
 ```
 
+Build the signed Android App Bundle for Google Play:
+
+```powershell
+.\tool\flutter.cmd build appbundle --release
+```
+
+Release signing setup is documented in [docs/play_store_release.md](docs/play_store_release.md).
+
 ## Android Automotive
 
 RadioWave declares Android Auto media support and exposes browseable media roots
@@ -106,7 +114,7 @@ Typical local install flow:
 ```powershell
 .\tool\flutter.cmd build apk --debug
 adb install -r build\app\outputs\flutter-apk\app-debug.apk
-adb shell am start -n com.example.radio_app_flutter/.MainActivity
+adb shell am start -n com.cs6636291.radiowave/.MainActivity
 ```
 
 ## CI/CD
@@ -115,7 +123,7 @@ The repository uses three workflow types:
 
 - `ci.yml` validates every pull request and push to `main`
 - `build-apk.yml` builds downloadable APK artifacts from `main` or manual runs
-- `release.yml` creates a GitHub Release manually from the Actions tab
+- `release.yml` creates signed APK and AAB release assets manually from the Actions tab
 - `deploy.yml` deploys Flutter web to Cloudflare Pages from `main`
 
 Release documentation is in [docs/release_process.md](docs/release_process.md).

@@ -6,7 +6,7 @@ class AndroidRotaryInput {
   AndroidRotaryInput._();
 
   static const MethodChannel _channel = MethodChannel(
-    'com.example.radio_app_flutter/rotary',
+    'com.cs6636291.radiowave/rotary',
   );
   static final StreamController<RotaryInputEvent> _events =
       StreamController<RotaryInputEvent>.broadcast();

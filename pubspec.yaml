@@ -1,5 +1,5 @@
 name: radio_app_flutter
-description: A Flutter conversion of the RadioWave internet radio app.
+description: RadioWave is a cross-platform internet radio player for discovering, streaming, and saving live stations.
 publish_to: "none"
 version: 1.0.0+1
 
@@ -23,6 +23,30 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  icons_launcher: 3.1.0
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icons/app_icon.png
+
+icons_launcher:
+  image_path: "assets/icons/app_icon.png"
+  platforms:
+    android:
+      enable: true
+      image_path: "assets/icons/app_icon.png"
+      adaptive_background_color: "#F5081F"
+      adaptive_foreground_image: "assets/icons/android_adaptive_foreground.png"
+      adaptive_round_image: "assets/icons/android_adaptive_foreground.png"
+    ios:
+      enable: true
+      image_path: "assets/icons/app_icon.png"
+    web:
+      enable: true
+      image_path: "assets/icons/app_icon.png"
+      maskable_image_path: "assets/icons/app_icon.png"
+      favicon_path: "assets/icons/app_icon.png"
+    windows:
+      enable: true
+      image_path: "assets/icons/app_icon.png"

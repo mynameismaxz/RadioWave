@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 
 class AndroidEqualizerAdapter {
   static const MethodChannel _channel = MethodChannel(
-    'com.example.radio_app_flutter/equalizer',
+    'com.cs6636291.radiowave/equalizer',
   );
 
   static Future<void> setEqualizer({

@@ -10,12 +10,13 @@
         android:label="RadioWave"
         android:name="${applicationName}"
         android:usesCleartextTraffic="true"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round">
         <meta-data
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" />
         <activity
-            android:name=".MainActivity"
+            android:name="com.cs6636291.radiowave.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""

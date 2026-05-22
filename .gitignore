@@ -11,6 +11,11 @@ android/.gradle/
 android/app/debug/
 android/app/profile/
 android/app/release/
+android/key.properties
+android/*.jks
+android/*.keystore
+upload-keystore.jks
+*.base64.txt
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
 ios/Flutter/Generated.xcconfig

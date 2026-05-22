@@ -1,4 +1,4 @@
-package com.example.radio_app_flutter
+package com.cs6636291.radiowave
 
 import android.media.audiofx.Equalizer
 import android.util.Log
@@ -19,7 +19,7 @@ class MainActivity : AudioServiceActivity() {
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
-            "com.example.radio_app_flutter/equalizer"
+            "com.cs6636291.radiowave/equalizer"
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "setEqualizer" -> {
@@ -40,7 +40,7 @@ class MainActivity : AudioServiceActivity() {
 
         rotaryChannel = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
-            "com.example.radio_app_flutter/rotary"
+            "com.cs6636291.radiowave/rotary"
         )
     }
 

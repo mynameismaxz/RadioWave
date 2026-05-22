@@ -51,7 +51,7 @@ Future<RadioAudioHandler> _initAudioHandler() async {
   return AudioService.init(
     builder: RadioAudioHandler.new,
     config: const AudioServiceConfig(
-      androidNotificationChannelId: 'com.example.radio_app_flutter.playback',
+      androidNotificationChannelId: 'com.cs6636291.radiowave.playback',
       androidNotificationChannelName: 'RadioWave Playback',
       androidNotificationOngoing: true,
     ),

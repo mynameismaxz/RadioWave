@@ -27,7 +27,7 @@ versionName+versionCode
 .\tool\flutter.cmd pub get
 .\tool\flutter.cmd analyze
 .\tool\flutter.cmd test
-.\tool\flutter.cmd build apk --release
+.\tool\flutter.cmd build appbundle --release
 ```
 
 ## 3. Commit and Push
@@ -52,9 +52,11 @@ The workflow will:
 - verify that `pubspec.yaml` matches the entered version
 - run `flutter analyze`
 - run `flutter test`
+- configure Android signing from GitHub Secrets
 - build `app-release.apk`
+- build `app-release.aab` for Google Play
 - create a GitHub Release
-- upload the APK as a release asset
+- upload the APK and AAB as release assets
 
 ## 5. APK Artifact Builds
 
@@ -64,6 +66,22 @@ creating a release.
 
 ## Signing Note
 
-The current pipeline builds a standard Flutter release APK. For Play Store or
-production distribution, add Android signing secrets and configure Gradle
-signing before publishing.
+Release builds require Android signing secrets. Add these GitHub repository
+secrets before using the release workflows:
+
+- `ANDROID_UPLOAD_KEYSTORE_BASE64`
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_PASSWORD`
+- `ANDROID_KEY_ALIAS`
+
+Create the base64 value from the upload keystore file:
+
+```bash
+base64 -w 0 android/upload-keystore.jks
+```
+
+Use the generated AAB for Google Play:
+
+```text
+build/app/outputs/bundle/release/app-release.aab
+```
