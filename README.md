@@ -155,8 +155,3 @@ Increase `versionCode` for every Android build intended for release.
 - [Platform setup](docs/platform_setup.md)
 - [Release process](docs/release_process.md)
 - [Contributing](CONTRIBUTING.md)
-
-## License
-
-No license has been declared yet. Add a `LICENSE` file before accepting external
-contributions or distributing production builds publicly.
