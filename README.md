@@ -7,21 +7,25 @@
 RadioWave is a responsive Flutter internet radio app for web, mobile, desktop,
 and Android Automotive. It discovers public stations through Radio Browser,
 plays live streams with `just_audio`, and includes favorites, custom stations,
-equalizer controls, Android Auto media browsing, and car rotary input support.
+personalized "For You" discovery, equalizer controls, Android Auto media
+browsing, and car rotary input support.
 
 Live web app: [radiowave.pages.dev](https://radiowave.pages.dev/)
 
 ## Highlights
 
 - Discover and search stations from Radio Browser
+- Start from a personalized For You station feed based on local listening history
 - Filter stations by country
 - Save favorites locally with `shared_preferences`
 - Add custom stream URLs
 - Stream audio with `just_audio`
+- Use `audio_service` for native media controls and Android Auto browsing
 - Windows and Linux audio support with `just_audio_media_kit`
 - Responsive web-style player and Android Automotive landscape layout
 - Android Auto media library integration
 - Car rotary and D-pad navigation support
+- Branded launcher icons generated with `icons_launcher`
 - Cloudflare Pages web deployment
 - GitHub Actions CI, APK artifact builds, and manual releases
 
@@ -31,7 +35,9 @@ Live web app: [radiowave.pages.dev](https://radiowave.pages.dev/)
 - Dart 3.4+
 - `just_audio`
 - `audio_service`
+- `dio`
 - `shared_preferences`
+- `icons_launcher`
 - Cloudflare Pages / Wrangler
 - GitHub Actions
 
@@ -47,7 +53,7 @@ lib/
       models/             Station, country, and toast models
       services/           Radio Browser, audio, storage, Android Auto
     features/radio/
-      domain/             Tabs and view-state enums
+      domain/             Tabs, view states, and personalized station sorting
       state/              RadioController app state
       presentation/       Screens, responsive layouts, and widgets
 
@@ -106,8 +112,9 @@ Release signing setup is documented in [docs/play_store_release.md](docs/play_st
 ## Android Automotive
 
 RadioWave declares Android Auto media support and exposes browseable media roots
-for favorites and popular stations. The app also supports landscape layouts,
-D-pad navigation, media keys, and rotary events on Android Automotive emulators.
+for favorites and popular stations. The app also supports system media controls,
+landscape layouts, D-pad navigation, media keys, and rotary events on Android
+Automotive emulators.
 
 Typical local install flow:
 
@@ -133,7 +140,7 @@ Release documentation is in [docs/release_process.md](docs/release_process.md).
 Flutter versioning is controlled by `pubspec.yaml`:
 
 ```yaml
-version: 1.0.0+1
+version: 1.0.1+2
 ```
 
 Use this format:
@@ -154,4 +161,8 @@ Increase `versionCode` for every Android build intended for release.
 
 - [Platform setup](docs/platform_setup.md)
 - [Release process](docs/release_process.md)
+- [Play Store release checklist](docs/play_store_release.md)
+- [Play Store data safety draft](docs/play_store_data_safety.md)
+- [Privacy policy draft](docs/privacy_policy.md)
+- [Production readiness checklist](Checklist.md)
 - [Contributing](CONTRIBUTING.md)

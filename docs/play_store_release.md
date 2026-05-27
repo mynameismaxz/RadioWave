@@ -58,11 +58,12 @@ RadioWave is a simple internet radio player for discovering live stations from a
 
 Features:
 - Discover live public radio stations
+- Get a local For You feed based on stations you listen to most
 - Search and filter stations by country
 - Save favorites locally on your device
 - Add custom stream URLs
 - Sleep timer, theme settings, and equalizer controls
-- Background audio controls on supported Android devices
+- Background audio controls and Android Auto browsing on supported Android devices
 ```
 
 Category suggestion: Music & Audio.

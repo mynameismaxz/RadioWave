@@ -8,7 +8,7 @@ Use this as a starting point when filling the Play Console Data safety form.
 - No ads SDK.
 - No analytics SDK.
 - No crash reporting SDK.
-- Favorites, custom stations, playback state, theme, and equalizer settings are stored locally with `shared_preferences`.
+- Favorites, custom stations, playback state, theme, equalizer settings, and listening history for the For You feed are stored locally with `shared_preferences`.
 - Station discovery uses the public Radio Browser API.
 - Playback connects directly to selected third-party stream URLs, including some HTTP streams.
 
@@ -17,7 +17,7 @@ Use this as a starting point when filling the Play Console Data safety form.
 - Data collected: No, assuming no analytics or crash reporting SDK is added before release.
 - Data shared: No, by the app developer. The app connects users to third-party radio stream providers when playback is requested.
 - Security practices: Data is not transmitted by RadioWave-owned backend services because there is no RadioWave backend.
-- Data deletion: Users can remove favorites/custom stations in app or uninstall the app to remove locally stored data.
+- Data deletion: Users can remove favorites/custom stations in app. Uninstalling the app removes locally stored preferences and listening history.
 
 ## Before Submission
 

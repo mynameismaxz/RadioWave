@@ -1,142 +1,113 @@
-# Production Readiness Checklist — RadioWave Flutter
+# Production Readiness Checklist - RadioWave Flutter
 
-Checklist สำหรับตรวจสอบก่อน build ขึ้น production (Mobile / Web)
+Current status as of 2026-05-27. This checklist tracks what is already done and what remains before App Store / Play Store submission.
 
----
+## Done
 
-## 🔴 Blocker — ต้องแก้ก่อน Submit Store
+- [x] Android package is no longer `com.example.*`.
+  - `android/app/build.gradle.kts` uses `namespace = "com.cs6636291.radiowave"`.
+  - `android/app/build.gradle.kts` uses `applicationId = "com.cs6636291.radiowave"`.
+  - Kotlin package and Android method channels use `com.cs6636291.radiowave`.
+- [x] Android media notification channel id is aligned with the package:
+  - `lib/main.dart`: `com.cs6636291.radiowave.playback`.
+- [x] Android release signing is wired in Gradle.
+  - `android/app/build.gradle.kts` reads `android/key.properties`.
+  - Missing signing files fail release builds clearly.
+  - `android/key.properties` and `*.jks` are ignored by git.
+- [x] Branded app icons are generated.
+  - Source assets live in `assets/icons/`.
+  - Android mipmaps, iOS AppIcon, and web icons exist.
+  - `pubspec.yaml` uses `icons_launcher`.
+- [x] Web metadata has `lang`, description, theme color, manifest, favicon, and maskable icons.
+- [x] GitHub Actions exist for CI, APK builds, manual releases, and Cloudflare Pages deploys.
+- [x] `flutter analyze` passes.
+- [x] `flutter test` passes.
+- [x] Privacy/data-safety drafts mention local favorites, playback state, equalizer settings, and listening history.
 
-### 1. Application ID / Bundle Identifier
-- [ ] เปลี่ยน Android `applicationId` จาก `com.example.radio_app_flutter`
-  - File: `android/app/build.gradle.kts:24`
-- [ ] เปลี่ยน Android `namespace`
-  - File: `android/app/build.gradle.kts:9`
-- [ ] เปลี่ยน iOS `PRODUCT_BUNDLE_IDENTIFIER` จาก `com.example.radioAppFlutter`
-  - File: `ios/Runner.xcodeproj/project.pbxproj` (และ `RunnerTests`)
-- [ ] เปลี่ยน `androidNotificationChannelId` ให้ตรงกับ applicationId ใหม่
-  - File: `lib/main.dart:27`
-- [ ] ลบ TODO ใน `android/app/build.gradle.kts:23` หลังตั้งค่าเสร็จ
+## Blockers Before Store Submission
 
-### 2. Android Release Signing
-- [ ] สร้าง upload keystore (`keytool -genkey -v -keystore upload-keystore.jks ...`)
-- [ ] สร้าง `android/key.properties` (อย่าลืม add ใน `.gitignore`)
-- [ ] กำหนด `signingConfigs.release` ใน `android/app/build.gradle.kts`
-- [ ] เปลี่ยน `buildTypes.release.signingConfig` จาก `debug` → `release`
-  - File: `android/app/build.gradle.kts:35-38`
-- [ ] เพิ่ม ProGuard / R8 rules ถ้าเปิด minify
-- [ ] เก็บ keystore + รหัสผ่านอย่างปลอดภัย (อย่าให้หาย — เปลี่ยนไม่ได้)
+### iOS Bundle and Signing
 
-### 3. iOS Code Signing
-- [ ] เพิ่ม `DEVELOPMENT_TEAM` ใน Xcode project
-- [ ] ตั้งค่า Provisioning Profile (App Store distribution)
-- [ ] เปิด Capabilities: Background Modes → Audio, AirPlay, and Picture in Picture
-- [ ] สร้าง App Record ใน App Store Connect
+- [ ] Replace remaining iOS bundle identifiers:
+  - `ios/Runner.xcodeproj/project.pbxproj`: `com.example.radioAppFlutter`
+  - `ios/Runner.xcodeproj/project.pbxproj`: `com.example.radioAppFlutter.RunnerTests`
+- [ ] Add `DEVELOPMENT_TEAM` and App Store distribution signing settings in Xcode.
+- [ ] Create the app record in App Store Connect.
+- [ ] Add `UIBackgroundModes` with `audio` in `ios/Runner/Info.plist` if background playback is required on iOS.
+- [ ] Add a `PrivacyInfo.xcprivacy` privacy manifest before App Store submission.
 
-### 4. App Icons (ตอนนี้ยังเป็น Flutter default logo)
-- [ ] เพิ่ม `flutter_launcher_icons` ใน `dev_dependencies`
-- [ ] สร้าง icon source (1024x1024) + adaptive icon foreground/background
-- [ ] Generate icons สำหรับทุก density (Android `mipmap-*`, iOS `AppIcon.appiconset`)
-- [ ] ตรวจสอบ web `favicon.png`, `apple-touch-icon.png`, `icons/Icon-*.png` ให้เป็น brand จริง
+### Store Metadata
 
----
+- [ ] Host the privacy policy at a public HTTPS URL.
+- [ ] Replace the placeholder contact section in `docs/privacy_policy.md` with a real support email.
+- [ ] Fill Google Play Data Safety using `docs/play_store_data_safety.md`.
+- [ ] Prepare short description, full description, category, screenshots, feature graphic, and content rating answers.
+- [ ] Prepare App Store screenshots, subtitle, description, keywords, category, support URL, marketing URL, and review notes.
 
-## 🟠 ความปลอดภัย / Compliance
+### Signing Secrets
 
-### 5. Network Security
-- [ ] ทบทวน `android:usesCleartextTraffic="true"` ใน `AndroidManifest.xml:11`
-  - ถ้าจำเป็น (radio HTTP streams) → ใช้ `network_security_config.xml` จำกัดเฉพาะ domain
-- [ ] ทบทวน `NSAllowsArbitraryLoads=true` ใน `ios/Runner/Info.plist:28-31`
-  - เตรียมเหตุผล `NSAllowsArbitraryLoadsForMedia` หรือ exception per-domain
-  - **เตรียมคำชี้แจงให้ App Review** ว่าทำไมต้อง allow cleartext
+- [ ] Confirm the upload keystore is backed up in a secure vault.
+- [ ] Confirm GitHub release secrets are present:
+  - `ANDROID_UPLOAD_KEYSTORE_BASE64`
+  - `ANDROID_KEYSTORE_PASSWORD`
+  - `ANDROID_KEY_PASSWORD`
+  - `ANDROID_KEY_ALIAS`
+- [ ] Never commit `android/key.properties`, keystores, provisioning profiles, or API tokens.
 
-### 6. Privacy / Legal
-- [ ] เตรียม **Privacy Policy URL** (จำเป็นสำหรับ App Store + Play Store)
-- [ ] เตรียม Privacy Manifest (`PrivacyInfo.xcprivacy`) — iOS บังคับตั้งแต่ 2024
-- [ ] กรอก Data Safety form ใน Play Console (เก็บ favorites ใน local เท่านั้น)
-- [ ] ถ้าจะใส่ analytics/crash reporting → ระบุใน privacy policy
+## Security and Compliance
 
-### 7. Permissions
-- [ ] ทบทวน Android permissions ใน `AndroidManifest.xml` (INTERNET, WAKE_LOCK, FOREGROUND_SERVICE*) — ✅ ครบและสมเหตุสมผลแล้ว
-- [ ] iOS background audio: ต้องเพิ่ม `UIBackgroundModes` → `audio` ใน `Info.plist` (ยังไม่มี!)
+### Network Security
 
----
+- [ ] Review Android `android:usesCleartextTraffic="true"` in `android/app/src/main/AndroidManifest.xml`.
+  - Plain HTTP is still needed for many public radio streams.
+  - If tightened later, use `network_security_config.xml` and verify HTTP stations still work.
+- [ ] Review iOS `NSAllowsArbitraryLoads=true` in `ios/Runner/Info.plist`.
+  - Prepare App Review notes explaining public HTTP radio streams.
+  - Prefer a narrower media-only or per-domain policy if feasible without breaking stations.
 
-## 🟡 Metadata / Store Assets
+### Local Data
 
-### 8. App Metadata
-- [ ] อัพเดท `pubspec.yaml` → `description` ให้เป็น marketing copy (ตอนนี้เขียนว่า "A Flutter conversion of...")
-- [ ] กำหนด `version` semver ที่จะ release (ตอนนี้ `1.0.0+1`)
-- [ ] ตรวจสอบ `CFBundleDisplayName` และ `android:label` = "RadioWave" ✅
-- [ ] เตรียม screenshots (Android: phone/tablet, iOS: 6.7"/6.5"/5.5"/iPad)
-- [ ] เตรียม Feature graphic (Play Store) + App preview video (optional)
-- [ ] เขียน Short description + Full description
-- [ ] เลือก Category + Content rating questionnaire
+- [x] Favorites/custom stations are local-only.
+- [x] Listening history for For You is local-only.
+- [x] Theme, playback state, and equalizer settings are local-only.
+- [ ] Add in-app controls for clearing listening history if required by store review or privacy policy scope.
 
-### 9. Web / PWA
-- [ ] ตรวจสอบ `web/manifest.json` — ✅ ครบ
-- [ ] ตรวจสอบ `web/index.html` description / theme-color — ✅ มี
-- [ ] เพิ่ม `lang` attribute ใน `<html>` tag ของ `web/index.html`
-- [ ] ทดสอบ Lighthouse PWA score
-- [ ] กำหนด custom domain ใน Cloudflare Workers (ถ้ามี)
+## Product QA
 
----
+- [ ] Search stations through Radio Browser.
+- [ ] Use For You with no history and with populated listening history.
+- [ ] Filter stations by country.
+- [ ] Play HTTP and HTTPS streams.
+- [ ] Save/remove favorites and verify persistence after restart.
+- [ ] Add custom station and verify it appears in favorites.
+- [ ] Use sleep timer.
+- [ ] Switch light/dark/system theme.
+- [ ] Adjust equalizer settings on Android and web.
+- [ ] Verify offline/error UI.
+- [ ] Verify layout on phone, tablet, desktop web, and Android Automotive landscape.
+- [ ] Verify D-pad, rotary input, media keys, and Android Auto browse roots.
+- [ ] Verify lock-screen/notification play-pause behavior.
 
-## 🟢 คุณภาพโค้ด / Testing
+## Build Verification
 
-### 10. Tests
-- [ ] เพิ่ม widget tests สำหรับหน้าจอหลัก (Home, Player, Favorites)
-- [ ] เพิ่ม integration test สำหรับ flow: ค้นหา → เล่น → add favorite
-- [ ] Mock `RadioBrowserApi` ใน test (ตอนนี้ใน `test/widget_test.dart` มีแค่ 2 unit tests)
-- [ ] รัน `flutter test --coverage` ตั้ง target ≥ 50%
+- [x] `.\tool\flutter.cmd analyze`
+- [x] `.\tool\flutter.cmd test`
+- [ ] `.\tool\flutter.cmd build apk --debug`
+- [ ] `.\tool\flutter.cmd build apk --release`
+- [ ] `.\tool\flutter.cmd build appbundle --release`
+- [ ] `.\tool\flutter.cmd build web --release`
+- [ ] `flutter build ipa --release` on macOS with Xcode signing configured.
 
-### 11. Build Verification
-- [ ] `flutter analyze` → no issues ✅
-- [ ] `flutter test` → all pass ✅
-- [ ] `flutter build apk --release` → สำเร็จ + ทดสอบบนเครื่องจริง
-- [ ] `flutter build appbundle --release` → สำหรับ Play Store
-- [ ] `flutter build ipa --release` → สำหรับ App Store
-- [ ] `flutter build web --release` → ทดสอบ deploy
+## Release Steps
 
-### 12. Manual QA บนเครื่องจริง
-- [ ] เล่นสถานี HTTP / HTTPS ทั้งสอง
-- [ ] Background playback (ล็อกหน้าจอ → ยังเล่นต่อ)
-- [ ] Lock screen / notification controls (play/pause/next/prev)
-- [ ] เปลี่ยนสถานีระหว่างเล่น (ไม่ค้าง / leak audio)
-- [ ] โทรเข้าระหว่างเล่น (audio interruption handling)
-- [ ] Add custom station + favorite persistence หลังปิดแอป
-- [ ] Sleep timer ทำงานครบ
-- [ ] Dark / Light mode + system theme follow
-- [ ] Offline state (ไม่มี internet → error UI ถูกต้อง)
-- [ ] Rotate / resize (iPad / tablet / web)
-
----
-
-## 🔵 Operations
-
-### 13. Monitoring / Crash Reporting (optional แต่แนะนำ)
-- [ ] เพิ่ม `firebase_crashlytics` หรือ `sentry_flutter`
-- [ ] ตั้ง alert สำหรับ crash rate
-- [ ] เก็บ analytics event (เล่นสถานี / favorite) — ระวัง privacy
-
-### 14. CI/CD
-- [ ] เพิ่ม GitHub Actions workflow: `flutter analyze` + `flutter test` ทุก PR
-- [ ] (Optional) Auto build APK/IPA ตอน tag release
-- [ ] Cloudflare Workers deploy preview สำหรับ PR
-
-### 15. Documentation
-- [ ] อัพเดท `README.md` (ตอนนี้ยังเขียนเชิง dev setup, แก้ trailing `# RadioWave` ซ้ำที่บรรทัด 101)
-- [ ] เพิ่ม `CHANGELOG.md`
-- [ ] เพิ่มไฟล์ `LICENSE`
-
----
-
-## 📝 Pre-Release Checklist สุดท้าย
-
-- [ ] `flutter clean && flutter pub get && flutter analyze && flutter test`
-- [ ] ทดสอบ release build บนเครื่องจริง (ไม่ใช่ debug/profile)
-- [ ] Commit ทุกอย่าง + tag version (`git tag v1.0.0`)
-- [ ] Backup keystore + provisioning profile ในที่ปลอดภัย
-- [ ] Submit Android (Internal testing → Closed → Production)
-- [ ] Submit iOS (TestFlight → App Store)
-- [ ] Deploy web (`bash scripts/cloudflare_build.sh && npx wrangler deploy`)
-- [ ] ตรวจสอบ store listing สด ๆ หลัง approve
+- [ ] Update `pubspec.yaml` version when preparing the next release.
+  - Current version: `1.0.1+2`.
+- [ ] Update `CHANGELOG.md`.
+- [ ] Run local checks:
+  - `.\tool\flutter.cmd pub get`
+  - `.\tool\flutter.cmd analyze`
+  - `.\tool\flutter.cmd test`
+- [ ] Push to `main`.
+- [ ] Run the manual GitHub `Release` workflow.
+- [ ] Upload the generated AAB to Play Console.
+- [ ] Deploy web from `main` through the `Deploy Web` workflow.

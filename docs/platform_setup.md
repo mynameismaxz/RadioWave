@@ -38,9 +38,11 @@ flutter run -d linux
 
 ## Audio Notes
 
-The project uses `just_audio` for Android, iOS, macOS, and web. Windows and Linux are enabled with `just_audio_media_kit`, `media_kit_libs_windows_audio`, and `media_kit_libs_linux`.
+The project uses `just_audio` for playback and wraps it with `audio_service` for native media controls and Android Auto browsing on Android, iOS, macOS, and web. Windows and Linux are enabled with `just_audio_media_kit`, `media_kit_libs_windows_audio`, and `media_kit_libs_linux`.
 
 Some public radio streams are plain HTTP, have unusual codecs, or do not return complete server headers. That can still make individual stations fail on one platform while another platform plays them.
+
+Radio Browser requests use `dio`. `RadioBrowserApi` races the configured mirrors with a staggered start, deduplicates in-flight requests by key, and caches station/country responses for short TTL windows.
 
 ## Android
 
@@ -53,6 +55,8 @@ After `flutter create`, Android should include internet permission in the genera
 </application>
 ```
 
+The current Android package is `com.cs6636291.radiowave`. The audio notification channel id is `com.cs6636291.radiowave.playback`; keep those values aligned if the package name changes.
+
 ## iOS
 
 For plain HTTP streams, add an App Transport Security exception in the generated `ios/Runner/Info.plist`:
@@ -64,6 +68,8 @@ For plain HTTP streams, add an App Transport Security exception in the generated
   <true/>
 </dict>
 ```
+
+Before App Store submission, replace the remaining example iOS bundle identifiers in `ios/Runner.xcodeproj/project.pbxproj`, configure signing, and add `UIBackgroundModes` with `audio` if background playback is required.
 
 ## macOS
 

@@ -1,59 +1,102 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with this repository.
 
 ## Project
 
-Flutter port of a Vue/Vite internet radio app (RadioWave). Targets mobile + web first; Android, iOS, macOS, Windows, and Linux are also supported. Streams from the public [Radio Browser](https://www.radio-browser.info/) API.
+RadioWave is a Flutter internet radio app for mobile, web, desktop, and Android Automotive. It streams public stations from the Radio Browser API and currently ships as `1.0.1+2`.
 
 ## Commands
 
 ```bash
 flutter pub get
-flutter analyze        # CI gate — lint config in analysis_options.yaml is strict (prefer_const_*)
+flutter analyze
 flutter test
-flutter test test/widget_test.dart --plain-name 'creates a custom station favorite payload'  # single test
-flutter run -d chrome  # web
-flutter run -d ios     # iOS (macOS + Xcode required)
+flutter test test/widget_test.dart --plain-name 'creates a custom station favorite payload'
+flutter run -d chrome
+flutter run -d ios
 flutter run -d android
 flutter build web --release
 ```
 
-On Windows, use the `tool/*.cmd` wrappers (e.g. `tool\flutter.cmd analyze`) — they invoke the Flutter at `C:\flutter\bin\flutter.bat` and bypass PowerShell execution policy. On macOS/Linux just call `flutter` directly.
+On Windows, prefer the helper scripts in `tool/`, for example:
 
-The web build deploys to Cloudflare Workers via Wrangler static assets — see `scripts/cloudflare_build.sh` (clones Flutter stable on every CI build) and `wrangler.jsonc` (serves `build/web` with SPA fallback).
+```powershell
+.\tool\flutter.cmd pub get
+.\tool\flutter.cmd analyze
+.\tool\flutter.cmd test
+.\tool\run_web.cmd
+```
+
+The web build deploys to Cloudflare Pages from `.github/workflows/deploy.yml`. `wrangler.jsonc` documents the static `build/web` output and SPA fallback for manual Wrangler usage.
 
 ## Architecture
 
-### State management — single ChangeNotifier, no Provider/Riverpod
+### State Management
 
-`lib/src/features/radio/state/radio_controller.dart` is the **only** app state container. It extends `ChangeNotifier` and owns: API client, favorites store, audio player, tab state, station list, search/country filter, player state, sleep timer, and toast queue. `RadioWaveHome` constructs it once in `initState`, wires it with `AnimatedBuilder`, and disposes it. Every widget below receives `controller` as a constructor arg — there is no `InheritedWidget`, no `Provider`, no `Riverpod`. Add new state to `RadioController` and call `_safeNotify()`; do not introduce a DI framework without discussing it.
+`lib/src/features/radio/state/radio_controller.dart` is the only app state container. It extends `ChangeNotifier` and owns the API client, favorites store, listening history store, playback state store, equalizer settings store, audio player, tab state, station list, search/country filters, player state, sleep timer, and toast queue.
 
-Theme is the same pattern: `lib/src/app/theme/theme_notifier.dart` exports a top-level `themeNotifier` singleton (`ValueNotifier<ThemeMode>`), consumed by `RadioWaveApp` via `ValueListenableBuilder`.
+`RadioWaveHome` constructs the controller once in `initState`, wires it with `AnimatedBuilder`, and disposes it. Widgets receive `controller` through constructors. Do not introduce Provider, Riverpod, or another DI/state framework without discussing it.
 
-### Data layer
+Theme follows the same simple pattern: `lib/src/app/theme/theme_notifier.dart` exports a top-level `themeNotifier` singleton consumed by `RadioWaveApp`.
 
-- `RadioBrowserApi` (`lib/src/data/services/radio_browser_api.dart`) **races 4 mirrors in parallel** with a 700 ms stagger between starts; first success wins and updates `_currentServer` so subsequent requests prefer the fast mirror. Has request-key in-flight deduplication and TTL cache (3 min stations, 12 h countries). Keep the staggered-race behavior — replacing it with a sequential fallback regresses cold-start latency significantly.
-- `FavoritesStore` persists to `SharedPreferences` under key `radiowave_favorites` as a JSON list. Always call `init()` before reading.
-- `AudioPlayerService` wraps `just_audio`. Each `playStation` call attaches a `MediaItem` tag for lock-screen / notification metadata via `just_audio_background`.
+### Data Layer
 
-### Audio platform matrix
+- `RadioBrowserApi` (`lib/src/data/services/radio_browser_api.dart`) uses `dio`.
+- It races 4 Radio Browser mirrors with a 700 ms stagger; first success wins and updates `_currentServer`.
+- It deduplicates in-flight requests by request key.
+- It caches stations for 3 minutes and countries for 12 hours.
+- Keep the staggered mirror race. A sequential fallback regresses cold-start latency.
+- `FavoritesStore` persists to `SharedPreferences` under `radiowave_favorites`.
+- `ListeningHistoryStore` persists to `SharedPreferences` under `radiowave_listening_history` and powers the local For You feed.
+- Listening history must remain local-only unless privacy docs and store forms are updated.
 
-`lib/main.dart` controls platform-specific init order. **Both calls matter:**
+### Audio
 
-1. `JustAudioMediaKit.ensureInitialized()` — required on Windows/Linux (media_kit backend); no-op elsewhere.
-2. `JustAudioBackground.init(...)` — only valid on Android, iOS, macOS, and web. The guard in `_initBackgroundPlayback()` skips it on Windows/Linux to avoid a crash.
+`lib/main.dart` controls platform-specific audio setup:
 
-If `androidNotificationChannelId` is changed, it must stay in sync with the Android `applicationId` (see `Checklist.md`).
+1. `JustAudioMediaKit.ensureInitialized()` is required for Windows/Linux media-kit support and is a no-op elsewhere.
+2. `_initAudioHandler()` uses `AudioService.init(...)` on Android, iOS, macOS, and web. It returns a plain `RadioAudioHandler` on Windows/Linux.
 
-### UI structure
+`AudioPlayerService` wraps the shared `RadioAudioHandler` / `audio_service` player. Each `playStation` call sets a `MediaItem` for lock-screen, notification, and Android Auto metadata.
 
-`RadioWaveHome` is a stack: solid gradient background → centered content column (header, country filter, tab nav, station viewport) capped at 720px wide → bottom `PlayerBar` → `ToastOverlay`. Tabs (`Discover` / `Favorites` / `Add`) are an enum in `lib/src/features/radio/domain/radio_tab.dart`; the list area renders one of four `StationViewState`s (`loading`, `list`, `empty`, `error`) — keep those four states wired through any new flow.
+If `androidNotificationChannelId` changes, keep it aligned with Android package names and method-channel IDs:
 
-## Network security (HTTP streams)
+- Android package: `com.cs6636291.radiowave`
+- Playback channel: `com.cs6636291.radiowave.playback`
+- Equalizer channel: `com.cs6636291.radiowave/equalizer`
+- Rotary channel: `com.cs6636291.radiowave/rotary`
 
-Many radio streams are plain HTTP. The Android manifest enables `usesCleartextTraffic="true"` and `ios/Runner/Info.plist` sets `NSAllowsArbitraryLoads`. Tightening these (per-domain exceptions, `network_security_config.xml`) is tracked in `Checklist.md` — don't silently remove them without a replacement, or HTTP streams stop playing.
+### UI
 
-## Production readiness
+`RadioWaveHome` is a stack with gradient background, centered content, optional wide sidebar layout, bottom `PlayerBar`, and `ToastOverlay`.
 
-`Checklist.md` (Thai + English, mixed) tracks every blocker before store submission: bundle IDs are still `com.example.*`, Android release signing isn't configured, iOS background audio mode (`UIBackgroundModes`) is missing from `Info.plist`, and launcher icons are still the Flutter default. Consult it before touching `android/app/build.gradle.kts`, `ios/Runner/Info.plist`, or `pubspec.yaml` version metadata.
+Tabs are defined in `lib/src/features/radio/domain/radio_tab.dart`:
+
+- `Discover`
+- `Favorites`
+- `Equalizer`
+- `Add Station`
+
+The list area renders one of four `StationViewState`s: `loading`, `list`, `empty`, or `error`. Keep these states wired through any new station flow.
+
+Empty country selection is labeled `For You` and loads personalized stations when local listening history exists. If there is no history, it falls back to top Radio Browser stations.
+
+## Network Security
+
+Many radio streams are plain HTTP. Android currently enables `android:usesCleartextTraffic="true"` and iOS currently enables `NSAllowsArbitraryLoads`. Do not remove these without a tested replacement, or HTTP streams will stop playing.
+
+If these are tightened later, use platform-specific network exceptions and update `Checklist.md`, `docs/privacy_policy.md`, and store review notes.
+
+## Production Readiness
+
+`Checklist.md` tracks current release blockers. As of this update:
+
+- Android IDs are configured.
+- Android release signing is wired, with local signing files ignored by git.
+- Launcher icons are generated.
+- iOS bundle identifiers still use `com.example.*`.
+- iOS background audio mode is not yet declared in `Info.plist`.
+- Store privacy URLs, support contact, screenshots, and final metadata still need completion.
+
+Consult `Checklist.md` before touching `android/app/build.gradle.kts`, `ios/Runner/Info.plist`, iOS bundle identifiers, or `pubspec.yaml` version metadata.

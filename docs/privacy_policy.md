@@ -1,12 +1,12 @@
 # RadioWave Privacy Policy
 
-Last updated: 2026-05-22
+Last updated: 2026-05-27
 
-RadioWave is an internet radio player that lets you discover public radio stations, play live streams, save favorites, and add custom stream URLs.
+RadioWave is an internet radio player that lets you discover public radio stations, play live streams, save favorites, add custom stream URLs, and receive local For You recommendations.
 
 ## Data We Store
 
-RadioWave stores app preferences locally on your device, including favorites, custom station entries, playback state, theme choice, and equalizer settings. This data is not sent to RadioWave servers.
+RadioWave stores app preferences locally on your device, including favorites, custom station entries, playback state, theme choice, equalizer settings, and listening history used for the For You station feed. This data is not sent to RadioWave servers.
 
 ## Network Requests
 
