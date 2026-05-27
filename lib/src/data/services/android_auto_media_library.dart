@@ -98,8 +98,9 @@ class AndroidAutoMediaLibrary {
     }
 
     final uri = Uri.tryParse(item.id);
-    if (uri != null && uri.hasScheme) {
-      return item.id;
+    final scheme = uri?.scheme.toLowerCase();
+    if (scheme == 'http' || scheme == 'https') {
+      return item.id.trim();
     }
 
     return null;

@@ -58,7 +58,7 @@ class FavoritesStore {
       return false;
     }
 
-    _favorites.add(station);
+    _favorites = <Station>[..._favorites, station];
     await _save();
     return true;
   }
@@ -86,12 +86,14 @@ class FavoritesStore {
   }
 
   Future<void> update(String uuid, Station station) async {
-    final index = _favorites.indexWhere((favorite) => favorite.uuid == uuid);
-    if (index == -1) {
+    if (!isFavorite(uuid)) {
       return;
     }
 
-    _favorites[index] = station;
+    _favorites = <Station>[
+      for (final favorite in _favorites)
+        if (favorite.uuid == uuid) station else favorite,
+    ];
     await _save();
   }
 

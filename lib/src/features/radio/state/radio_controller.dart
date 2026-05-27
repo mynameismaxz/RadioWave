@@ -11,8 +11,10 @@ import '../../../data/models/station.dart';
 import '../../../data/services/audio_player_service.dart';
 import '../../../data/services/equalizer_settings_store.dart';
 import '../../../data/services/favorites_store.dart';
+import '../../../data/services/listening_history_store.dart';
 import '../../../data/services/playback_state_store.dart';
 import '../../../data/services/radio_browser_api.dart';
+import '../domain/personalized_station_sorter.dart';
 import '../domain/radio_tab.dart';
 import '../domain/station_view_state.dart';
 
@@ -22,13 +24,18 @@ class RadioController extends ChangeNotifier {
     FavoritesStore? favorites,
     AudioPlayerService? player,
     PlaybackStateStore? playbackStateStore,
+    ListeningHistoryStore? listeningHistoryStore,
     EqualizerSettingsStore? equalizerSettingsStore,
   })  : api = api ?? RadioBrowserApi(),
         favorites = favorites ?? FavoritesStore(),
         playbackStateStore = playbackStateStore ?? PlaybackStateStore(),
+        listeningHistoryStore =
+            listeningHistoryStore ?? ListeningHistoryStore(),
         equalizerSettingsStore =
             equalizerSettingsStore ?? EqualizerSettingsStore(),
-        player = player ?? AudioPlayerService() {
+        player = player ?? AudioPlayerService(),
+        _ownsApi = api == null,
+        _ownsPlayer = player == null {
     _playerStateSub = this.player.playerStateStream.listen(_onPlayerState);
     _playbackEventSub = this.player.playbackEventStream.listen(
       (_) {},
@@ -48,8 +55,11 @@ class RadioController extends ChangeNotifier {
   final RadioBrowserApi api;
   final FavoritesStore favorites;
   final PlaybackStateStore playbackStateStore;
+  final ListeningHistoryStore listeningHistoryStore;
   final EqualizerSettingsStore equalizerSettingsStore;
   final AudioPlayerService player;
+  final bool _ownsApi;
+  final bool _ownsPlayer;
   final List<Timer> _toastTimers = <Timer>[];
 
   StreamSubscription<PlayerState>? _playerStateSub;
@@ -145,6 +155,65 @@ class RadioController extends ChangeNotifier {
         .toList();
   }
 
+  Future<List<Station>> _loadForYouStations() async {
+    final topEntries = topListeningEntries(
+      listeningHistoryStore.getEntries(),
+      limit: 10,
+    );
+    if (topEntries.isEmpty) {
+      return api.getTopStations(limit: 50);
+    }
+
+    final recommendationsBySeed = await Future.wait(
+      topEntries.map((entry) async {
+        final tag = primaryListeningTag(entry.station);
+        if (tag == null) {
+          return <Station>[];
+        }
+
+        try {
+          return await api.getTopStationsByTag(tag, limit: 8);
+        } catch (_) {
+          return <Station>[];
+        }
+      }),
+    );
+    final recommendations = buildForYouStations(
+      topEntries,
+      recommendationsBySeed,
+    );
+
+    if (recommendations.length >= 50) {
+      return recommendations;
+    }
+
+    final fallbackStations = await api.getTopStations(limit: 50);
+    return buildForYouStations(
+      topEntries,
+      recommendationsBySeed,
+      fallbackStations: fallbackStations,
+    );
+  }
+
+  Future<void> _recordStationPlay(Station station) async {
+    try {
+      await listeningHistoryStore.recordPlay(station);
+    } catch (_) {
+      return;
+    }
+
+    _loadedDiscoverKey = null;
+    if (_disposed ||
+        currentTab != RadioTab.discover ||
+        searchQuery.trim().isNotEmpty ||
+        selectedCountry.isNotEmpty ||
+        stations.isEmpty) {
+      return;
+    }
+
+    unawaited(loadDiscover(forceRefresh: true));
+  }
+
   /// Index of current station in the stations list (-1 if not found).
   int get _currentIndex {
     final station = currentStation;
@@ -155,6 +224,7 @@ class RadioController extends ChangeNotifier {
   Future<void> init() async {
     await favorites.init();
     await playbackStateStore.init();
+    await listeningHistoryStore.init();
     await equalizerSettingsStore.init();
     favoriteUuids = favorites.getUuids().toSet();
     _restorePlaybackState();
@@ -311,7 +381,7 @@ class RadioController extends ChangeNotifier {
 
     try {
       final nextStations = query.isEmpty && countryCode.isEmpty
-          ? await api.getTopStations(limit: 50)
+          ? await _loadForYouStations()
           : await api.search(query, countryCode, limit: 50);
 
       if (_disposed ||
@@ -442,6 +512,7 @@ class RadioController extends ChangeNotifier {
     playerStatus = 'Connecting...';
     _hasLoadedStation = false;
     _savePlaybackState(wasPlaying: true);
+    unawaited(_recordStationPlay(station));
     _safeNotify();
 
     // Safety timeout — if still loading after 12s, force stop
@@ -1017,9 +1088,13 @@ class RadioController extends ChangeNotifier {
       FlutterVolumeController.removeListener();
       _systemVolumeListenerActive = false;
     }
-    unawaited(player.stop());
-    unawaited(player.dispose());
-    api.dispose();
+    if (_ownsPlayer) {
+      unawaited(player.stop());
+      unawaited(player.dispose());
+    }
+    if (_ownsApi) {
+      api.dispose();
+    }
     super.dispose();
   }
 }

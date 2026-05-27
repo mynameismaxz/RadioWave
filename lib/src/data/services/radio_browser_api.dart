@@ -1,23 +1,33 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 import '../models/radio_country.dart';
 import '../models/station.dart';
 
 class RadioBrowserApi {
   RadioBrowserApi({
-    http.Client? client,
+    Dio? client,
     Duration? requestTimeout,
     DateTime Function()? now,
-  })  : _client = client ?? http.Client(),
-        _requestTimeout = requestTimeout ?? const Duration(seconds: 4),
+  })  : _requestTimeout = requestTimeout ?? const Duration(seconds: 4),
+        _client = client ??
+            Dio(
+              BaseOptions(
+                connectTimeout: requestTimeout ?? const Duration(seconds: 4),
+                receiveTimeout: requestTimeout ?? const Duration(seconds: 4),
+                responseType: ResponseType.json,
+                validateStatus: (_) => true,
+              ),
+            ),
+        _ownsClient = client == null,
         _now = now ?? DateTime.now;
 
-  final http.Client _client;
+  final Dio _client;
   final Duration _requestTimeout;
   final DateTime Function() _now;
+  final bool _ownsClient;
   final List<String> _servers = const <String>[
     'https://all.api.radio-browser.info',
     'https://de1.api.radio-browser.info',
@@ -97,7 +107,10 @@ class RadioBrowserApi {
           pending -= 1;
           if (pending == 0 && !completer.isCompleted) {
             completer.completeError(
-              Exception('All API servers failed:\n${errors.join('\n')}'),
+              RadioBrowserException(
+                'All API servers failed.',
+                details: errors,
+              ),
             );
           }
         }),
@@ -129,23 +142,38 @@ class RadioBrowserApi {
     ).replace(queryParameters: queryParameters);
 
     try {
-      final response = await _client.get(uri).timeout(_requestTimeout);
+      final response = await _client.getUri<dynamic>(uri).timeout(
+            _requestTimeout,
+          );
+      final statusCode = response.statusCode ?? 0;
 
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw Exception(
-            'HTTP ${response.statusCode}: ${response.reasonPhrase}');
+      if (statusCode < 200 || statusCode >= 300) {
+        throw RadioBrowserException(
+          'Radio Browser returned HTTP $statusCode.',
+          details: <String>[
+            if (response.statusMessage != null) response.statusMessage!,
+          ],
+        );
       }
 
       if (completer.isCompleted) {
         return;
       }
 
-      final decoded = jsonDecode(response.body);
+      final decoded = _decodeResponseData(response.data);
       _currentServer = serverIndex;
       completer.complete(decoded);
     } catch (error) {
       errors.add('$baseUrl: $error');
     }
+  }
+
+  dynamic _decodeResponseData(dynamic data) {
+    if (data is String) {
+      return jsonDecode(data);
+    }
+
+    return data;
   }
 
   Map<String, String> _queryParameters(Map<String, Object?> params) {
@@ -192,6 +220,29 @@ class RadioBrowserApi {
         <String, Object?>{
           'limit': limit,
           'hidebroken': true,
+        },
+        _stationCacheTtl);
+
+    return _stationList(data);
+  }
+
+  Future<List<Station>> getTopStationsByTag(
+    String tag, {
+    int limit = 25,
+  }) async {
+    final normalizedTag = tag.trim();
+    if (normalizedTag.isEmpty) {
+      return const <Station>[];
+    }
+
+    final data = await _fetch(
+        '/json/stations/search',
+        <String, Object?>{
+          'tag': normalizedTag,
+          'limit': limit,
+          'hidebroken': true,
+          'order': 'clickcount',
+          'reverse': true,
         },
         _stationCacheTtl);
 
@@ -249,7 +300,25 @@ class RadioBrowserApi {
   }
 
   void dispose() {
-    _client.close();
+    if (_ownsClient) {
+      _client.close(force: true);
+    }
+  }
+}
+
+class RadioBrowserException implements Exception {
+  const RadioBrowserException(this.message, {this.details = const <String>[]});
+
+  final String message;
+  final List<String> details;
+
+  @override
+  String toString() {
+    if (details.isEmpty) {
+      return message;
+    }
+
+    return '$message\n${details.join('\n')}';
   }
 }
 
