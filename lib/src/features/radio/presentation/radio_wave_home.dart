@@ -87,46 +87,13 @@ class _RadioWaveHomeState extends State<RadioWaveHome>
                   MediaQuery.paddingOf(context),
                 );
 
-                return Stack(
-                  children: <Widget>[
-                    SafeArea(
-                      bottom: false,
-                      child: metrics.wide
-                          ? _WideHomeLayout(
-                              controller: controller,
-                              stationScrollController: _stationScrollController,
-                              metrics: metrics,
-                              sidebarCollapsed: _sidebarCollapsed,
-                              selectedStationIndex: _selectedStationIndex,
-                              onToggleSidebar: _toggleSidebar,
-                            )
-                          : Center(
-                              child: ConstrainedBox(
-                                constraints:
-                                    const BoxConstraints(maxWidth: 720),
-                                child: _MainColumn(
-                                  controller: controller,
-                                  stationScrollController:
-                                      _stationScrollController,
-                                  metrics: metrics,
-                                  showTabNav: true,
-                                  selectedStationIndex: _selectedStationIndex,
-                                ),
-                              ),
-                            ),
-                    ),
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: PlayerBar(
-                        controller: controller,
-                        height: metrics.playerHeight,
-                        short: metrics.short,
-                      ),
-                    ),
-                    ToastOverlay(toasts: controller.toasts),
-                  ],
+                return _RadioHomeBody(
+                  controller: controller,
+                  stationScrollController: _stationScrollController,
+                  metrics: metrics,
+                  sidebarCollapsed: _sidebarCollapsed,
+                  selectedStationIndex: _selectedStationIndex,
+                  onToggleSidebar: _toggleSidebar,
                 );
               },
             ),
@@ -328,6 +295,67 @@ class _RadioWaveHomeState extends State<RadioWaveHome>
         ),
       );
     });
+  }
+}
+
+class _RadioHomeBody extends StatelessWidget {
+  const _RadioHomeBody({
+    required this.controller,
+    required this.stationScrollController,
+    required this.metrics,
+    required this.sidebarCollapsed,
+    required this.selectedStationIndex,
+    required this.onToggleSidebar,
+  });
+
+  final RadioController controller;
+  final ScrollController stationScrollController;
+  final RadioResponsiveMetrics metrics;
+  final bool sidebarCollapsed;
+  final int selectedStationIndex;
+  final VoidCallback onToggleSidebar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: <Widget>[
+        SafeArea(
+          bottom: false,
+          child: metrics.wide
+              ? _WideHomeLayout(
+                  controller: controller,
+                  stationScrollController: stationScrollController,
+                  metrics: metrics,
+                  sidebarCollapsed: sidebarCollapsed,
+                  selectedStationIndex: selectedStationIndex,
+                  onToggleSidebar: onToggleSidebar,
+                )
+              : Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 720),
+                    child: _MainColumn(
+                      controller: controller,
+                      stationScrollController: stationScrollController,
+                      metrics: metrics,
+                      showTabNav: true,
+                      selectedStationIndex: selectedStationIndex,
+                    ),
+                  ),
+                ),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: PlayerBar(
+            controller: controller,
+            height: metrics.playerHeight,
+            short: metrics.short,
+          ),
+        ),
+        ToastOverlay(toasts: controller.toasts),
+      ],
+    );
   }
 }
 

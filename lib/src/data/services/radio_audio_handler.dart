@@ -8,9 +8,8 @@ import 'android_auto_media_library.dart';
 /// Shared handler instance initialized from `main.dart` before `runApp`.
 late final RadioAudioHandler radioAudioHandler;
 
-/// Audio handler tailored for live radio: the system notification exposes a
-/// single Stop action while playing (no Pause), matching radio UX where the
-/// stream cannot be resumed from the paused position.
+/// Audio handler tailored for live radio: the system notification exposes one
+/// play/pause action. Pause still stops the live stream internally.
 class RadioAudioHandler extends BaseAudioHandler {
   RadioAudioHandler({AndroidAutoMediaLibrary? mediaLibrary})
       : _mediaLibrary = mediaLibrary ?? AndroidAutoMediaLibrary() {
@@ -113,9 +112,7 @@ class RadioAudioHandler extends BaseAudioHandler {
   void _broadcastState(PlaybackEvent event) {
     final playing = _player.playing;
     playbackState.add(playbackState.value.copyWith(
-      controls: <MediaControl>[
-        if (playing) MediaControl.stop else MediaControl.play,
-      ],
+      controls: radioNotificationControls(playing: playing),
       systemActions: const <MediaAction>{},
       androidCompactActionIndices: const <int>[0],
       processingState: switch (event.processingState) {
@@ -131,4 +128,10 @@ class RadioAudioHandler extends BaseAudioHandler {
       speed: _player.speed,
     ));
   }
+}
+
+List<MediaControl> radioNotificationControls({required bool playing}) {
+  return <MediaControl>[
+    if (playing) MediaControl.pause else MediaControl.play,
+  ];
 }

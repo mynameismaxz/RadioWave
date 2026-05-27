@@ -100,7 +100,7 @@ class CountryFilter extends StatelessWidget {
 
   String _selectedCountryLabel() {
     if (controller.selectedCountry.isEmpty) {
-      return 'All Countries';
+      return 'For You';
     }
 
     for (final country in controller.countries) {
@@ -271,8 +271,8 @@ class _CountrySearchSheetState extends State<_CountrySearchSheet> {
                 ),
                 SizedBox(height: keyboardOpen ? 8 : 12),
                 _CountryOptionTile(
-                  title: 'All Countries',
-                  subtitle: '${widget.countries.length} countries',
+                  title: 'For You',
+                  subtitle: 'Popular stations from your top genres',
                   selected: widget.selectedCountry.isEmpty,
                   onTap: () => Navigator.of(context).pop(''),
                 ),
