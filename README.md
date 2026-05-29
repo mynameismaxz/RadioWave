@@ -152,7 +152,7 @@ versionName+versionCode
 Example:
 
 ```yaml
-version: 1.0.1+2
+version: 1.0.2+3
 ```
 
 Increase `versionCode` for every Android build intended for release.
