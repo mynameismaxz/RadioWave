@@ -64,6 +64,11 @@ android {
     }
 }
 
+dependencies {
+    // Android Auto app library - temporarily disabled (API changed)
+    // implementation("androidx.car.app:app:1.7.0")
+}
+
 flutter {
     source = "../.."
 }
